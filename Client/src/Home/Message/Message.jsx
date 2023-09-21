@@ -83,7 +83,8 @@ const Message = () => {
               </h2>
               <span className="text-2xl ">
               <Link to='../home' className="block sm:hidden md:hidden lg:hidden"> <BsArrowLeft/></Link>
-             <Link to='../home' className='hidden sm:block md:block lg:block '><BsPencilSquare /></Link> 
+             <Link to='../home' className='hidden sm:hidden md:block lg:block '><BsPencilSquare /></Link> 
+             <span className=" text-sm font-bold md:hidden ">Inbox</span>
               </span>
             </div>
             {chats.map((chat, id) => (

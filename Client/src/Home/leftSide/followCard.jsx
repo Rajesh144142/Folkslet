@@ -3,12 +3,16 @@ import { useSelector } from "react-redux";
 import { getAllUser } from "../api/UserRequests.jsx";
 import FollowersModal from "./followersModel.jsx";
 import User from "../User.jsx";
-
+import { useParams } from "react-router-dom";
 const FollowCard = ({ location }) => {
+  const param=useParams()
+  const home=param;
   const [modalOpened, setModalOpened] = useState(false);
   const [persons, setPersons] = useState([]);
   const { user } = useSelector((state) => state.authReducer.authData);
 const [showmore,setshowmore]=useState(false)
+console.log(home.id===user._id)
+
   useEffect(() => {
     const fetchPersons = async () => {
       try {
@@ -61,7 +65,7 @@ const [showmore,setshowmore]=useState(false)
     } else {
       // Render default content for other locations
       return (
-        <div className="shadow-sm p-2 w-full border-2 rounded-[0.7rem] gap-[1rem]  flex-col text-[13px] hidden sm:hidden md:flex lg:flex">
+        <div className={`shadow-sm p-2 w-full border-2 rounded-[0.7rem] gap-[1rem]  flex-col text-[13px] ${home.id===user._id?'block':'hidden'} md:flex lg:flex`}>
           <div className="font-bold text-[15px] text-center">
             <h3>People you may know</h3>
           </div>

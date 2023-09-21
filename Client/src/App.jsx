@@ -6,6 +6,7 @@ import Profile from './Home/Profile/profile';
 import { useSelector } from 'react-redux';
 import Navbar from './Home/navbar';
 import Message from './Home/Message/Message';
+import Upcoming from './Home/NewFeatures/Upcomingfeatures'
 
 const App = () => {
   const user = useSelector((state) => state.authReducer.authData);
@@ -28,7 +29,9 @@ const chatting=location.pathname === '/chat';
         <Route path="/auth/signup" element={user ? <Navigate to="../home" /> : <Auth />} />
         <Route path="/profile/:id" element={user ? <Profile /> :  <Navigate to="../auth/signup/"/>}/>
         <Route path="/chat" element={user ? <Message /> : <Navigate to="../auth/signup/"/>}/>
-        <Route
+        
+        <Route path="/Upcoming" element={user ? <Upcoming /> : <Navigate to="../auth/signup/"/>}/>
+<Route
           path="*"
           element={
             <main style={{ padding: "1rem" }}>

@@ -32,6 +32,7 @@ const ProfileModal = ({ modalOpened, setModalOpened, data }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     let UserData = formData;
+    console.log(UserData)
     if (profileImage) {
       const data = new FormData();
       const fileName = Date.now() + profileImage.name;
@@ -56,6 +57,7 @@ const ProfileModal = ({ modalOpened, setModalOpened, data }) => {
         console.log(err);
       }
     }
+    console.log(UserData)
     dispatch(updateUser(param.id, UserData));
     setModalOpened(false);
   };
@@ -103,8 +105,10 @@ const ProfileModal = ({ modalOpened, setModalOpened, data }) => {
             <input
               value={formData.worksAt}
               type="text"
+              name="worksAt"
               className="p-2 border-2 border-gray-50 text-center w-[100%] rounded-md bg-gray-50"
-              placeholder="Works at" onChange={handleChange}
+              placeholder="Works at" 
+              onChange={handleChange}
             />
           </div>
 

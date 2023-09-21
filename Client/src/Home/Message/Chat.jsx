@@ -2,12 +2,13 @@ import React, { useState, useEffect, useRef } from "react";
 import { getUser } from "../api/UserRequests";
 import { PiMessengerLogoLight } from "react-icons/pi";
 import { useDispatch, useSelector } from "react-redux";
-import { FaVideo } from "react-icons/fa";
+import { BsCameraVideo } from "react-icons/bs";
 import { IoCallOutline } from "react-icons/io5";
 import { AiOutlineSend, AiOutlinePlusSquare } from "react-icons/ai";
 import { addMessage, getMessages } from "../api/MessageRequests";
 import { format } from "timeago.js"; // Import the time formatting library
 import InputEmoji from "react-input-emoji";
+import { Link } from "react-router-dom";
 
 const Chat = ({ chat, currentUser, setsendMessage, recieveMessage }) => {
   // Get user data from Redux store
@@ -74,6 +75,10 @@ const Chat = ({ chat, currentUser, setsendMessage, recieveMessage }) => {
       text: newMessage,
       chatId: chat._id,
     };
+    if (!message.text) {
+      alert("You can't send an empty message..."); // Show an alert
+      return;
+    }
     try {
       const { data } = await addMessage(message);
       setMessages([...messages, data]);
@@ -116,9 +121,16 @@ const Chat = ({ chat, currentUser, setsendMessage, recieveMessage }) => {
           </div>
 
           {/* Render call and video icons */}
-          <div className="text-2xl gap-3 justify-center items-center mr-4 hidden sm:flex md:flex lg:flex">
-            <IoCallOutline />
-            <FaVideo />
+          <div
+            className="
+           gap-3 justify-center items-center mr-4 hidden sm:flex md:flex lg:flex "
+          >
+            <Link to="/Upcoming" className="text-2xl hover:text-3xl">
+              <IoCallOutline />
+            </Link>
+            <Link to="/Upcoming" className="text-2xl hover:text-3xl">
+              <BsCameraVideo />
+            </Link>
           </div>
         </div>
       )}
@@ -167,11 +179,14 @@ const Chat = ({ chat, currentUser, setsendMessage, recieveMessage }) => {
       {/* Render new message input */}
       {chat && (
         <div className="flex items-center justify-between self-end gap-[1rem] p-[0.8rem]   border-2 border-white  rounded-md bg-gray-50 ml-[6.1rem] sm:ml-[11.4rem] fixed md:ml-[25.5rem] lg:ml-[27.5rem] left-0  bottom-0 sm:bottom-0 md:bottom-0 lg:bottom-0  right-0">
-          <div className="text-2xl">
-            <AiOutlinePlusSquare />
+          <div className="">
+            <Link to="/Upcoming" className="text-2xl hover:text-3xl">
+              {" "}
+              <AiOutlinePlusSquare />
+            </Link>
           </div>
           <InputEmoji value={newMessage} onChange={handleChange} />
-          <div className="text-2xl  " onClick={handleSend}>
+          <div className="text-2xl  hover:text-3xl  " onClick={handleSend}>
             <AiOutlineSend />
           </div>
         </div>
@@ -179,14 +194,14 @@ const Chat = ({ chat, currentUser, setsendMessage, recieveMessage }) => {
 
       {/* Render a placeholder when no chat exists */}
       {!chat && (
-        <div className="flex flex-col h-screen justify-center items-center ">
-          <div className="border-[3px] rounded-full p-3 mt-2  border-black">
+        <div className="flex flex-col h-[30rem] md:h-[25rem] justify-center items-center">
+          <div className="border-[3px] rounded-full p-3 mt-2 border-black">
             <div className="text-5xl sm:text-6xl md:text-6xl lg:text-6xl">
               <PiMessengerLogoLight />
             </div>
           </div>
           <h1 className="text-lg">Your Messages</h1>
-          <h1 className="font-xs ">
+          <h1 className="font-xs">
             Send private photos and messages to a friend or group
           </h1>
         </div>

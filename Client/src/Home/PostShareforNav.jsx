@@ -21,9 +21,7 @@ const PostShareforNav = () => {
   const handleUpload = async (e) => {
     e.preventDefault();
     if (!desc.current.value.trim() || !image) {
-      if (!desc.current.value.trim())
-        alert("Please write something About your Post"); // Show an alert
-      if (!image) alert("Please Add a video Or Photo about it"); // Show an alert
+    alert("Empty Post is not Possible"); // Show an alert
 
       return; // Don't submit if description is empty or only whitespace
     }
@@ -31,6 +29,7 @@ const PostShareforNav = () => {
       userId: user._id, // Update this line
       desc: desc.current.value,
     };
+ 
     if (image) {
       const data = new FormData();
       const fileName = Date.now() + image.name;
@@ -50,6 +49,7 @@ const PostShareforNav = () => {
         // Handle error here
       }
     }
+ 
     // If no image, directly dispatch the uploadPost action
     dispatch(uploadPost(newPost));
     resetShare();
