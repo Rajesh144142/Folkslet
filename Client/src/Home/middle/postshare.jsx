@@ -10,8 +10,10 @@ import { HiOutlinePhoto } from "react-icons/hi2";
 import { RxCross2 } from "react-icons/rx";
 import { useDispatch, useSelector } from "react-redux";
 import { uploadImage, uploadPost } from "../action/UploadAction";
+import { useParams } from 'react-router-dom';
 
 const postShare = ({location}) => {
+  const param=useParams();
   const dispatch = useDispatch();
   const user = useSelector((state) => state.authReducer.authData.user);
   const loading = useSelector((state) => state.postReducer.uploading);
@@ -19,6 +21,7 @@ const postShare = ({location}) => {
   const desc = useRef();
   const serverPublic = import.meta.env.VITE_PUBLIC_FOLDER;
   const imageRef = useRef();
+  const home=param.id===user._id;
 
   const onImageChange = (event) => {
     if (event.target.files && event.target.files[0]) {
@@ -68,7 +71,7 @@ const postShare = ({location}) => {
 
   return (
     <div className=" flex flex-col sm:flex-row ">
-      <div className={`w-[0] m-auto sm:${location==='model'?'hidden':'block w-[6px]'} lg:hidden`}></div>
+      <div className={`w-[0] m-auto sm:${location==='model'?'hidden':home===true?'hidden':'block w-[6px]'} lg:hidden`}></div>
       <div className="m-auto border-[1px] shadow-md gap-1rem flex-col p-1 rounded-[1rem] w-[80%] hidden  sm:hidden md:block lg:block ">
         <div className="flex p-[1rem] justify-center items-center rounded-[1rem]   gap-[1rem] ">
           {/* <img className='rounded-[50%] w-[3rem] h-[3rem] ' src="https://images.unsplash.com/photo-1503023345310-bd7c1de61c7d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=465&q=80" alt="" /> */}

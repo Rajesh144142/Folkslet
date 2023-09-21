@@ -4,6 +4,8 @@ import Posts from "../middle/Posts";
 // import { getAllUser } from "../api/UserRequests.jsx";
 import ProfileLeft from "./ProfileLeft";
 import { useSelector } from "react-redux";
+import {Link} from 'react-router-dom'
+import {AiOutlineArrowLeft}from 'react-icons/ai'
 const profileSection = () => {
   const { user } = useSelector((state) => state.authReducer.authData);
   const { posts } = useSelector((state) => state.postReducer);
@@ -32,11 +34,14 @@ const profileSection = () => {
   }, 0);
   const serverPublic = import.meta.env.VITE_PUBLIC_FOLDER;
   return (
-    <div className=" w-[90%]   m-auto flex flex-col gap-[2rem] bg-slate-50 pt-[0.9rem]">
+    <div className=" w-[100%]   m-auto flex flex-col gap-[2rem] bg-slate-50 pt-[0.9rem]">
+      <div className="absolute hidden lg:block  text-xl ml-[2rem] mt-3 z-50 rounded-md hover:text-2xl ">
+   <Link to='../home' className=""><AiOutlineArrowLeft/></Link>
+      </div>
       <div className=" sticky p-1 rounded-3xl shadow-md flex flex-col  bg-white w-[90%]  m-auto gap-[3rem] overflow-x-clip ">
         <div className="flex flex-col  justify-center items-center  gap-[1rem]">
           <img
-            className="w-[100%] h-[13.3rem]"
+            className="w-[100%] h-[13.3rem]   md:w-[85%] md:h-[20rem]  lg:w-[75%] lg:h-[25rem] rounded-md"
             src={
               user.coverPicture
                 ? serverPublic + user.coverPicture
@@ -45,7 +50,7 @@ const profileSection = () => {
             alt=""
           />
           <img
-            className="w-[10rem] h-[10rem]  object-cover top-[7.7rem] absolute rounded-[50%] shadow-2xl border-2"
+            className="w-[10rem] h-[10rem]  object-cover top-[7.7rem]  md:top-[15rem] lg:top-[20rem] absolute rounded-[50%] shadow-2xl border-2"
             src={
               user.profilePicture
                 ? serverPublic + user.profilePicture
@@ -87,14 +92,14 @@ const profileSection = () => {
         </div>
         {/* <span className='text-center font-bold text-blue-500 p-1 cursor-pointer' >My profile</span> */}
       </div>
-      <div className="grid grid-cols-[40% ,2%,60%]md:grid-cols-[35% 2%,63%] lg:grid-cols-[40%,2%,58%] m-auto w-[80%]">
+      <div className="grid grid-cols-[40% ,2%,60%] md:grid-cols-[35% 2%,63%] lg:grid-cols-[40%,2%,58%] m-auto w-[80%]">
         <div>
           <ProfileLeft />
         </div>
         <div></div>
-        <div className=" m-auto w-[100%] flex flex-col gap-3">
+        <div className=" m-auto w-[100%] flex flex-col gap-3 mt-1">
           <Postshare />
-          <Posts/>
+          <Posts />
         </div>
       </div>
     </div>

@@ -4,7 +4,7 @@ import { trendData } from './trendData';
 const TrendCard = () => {
   return (
 
-    <div className=' flex-col gap-[1rem]  bg-slate-200 p-[1rem] rounded-[1rem] pl-[2rem] mr-1 shadow-2xl hidden sm:hidden md:hidden lg:flex'>
+    <div className=' flex-col gap-[1rem]  bg-slate-200 p-[1rem] rounded-[1rem] pl-[2rem] mr-1  hidden sm:hidden md:hidden lg:flex mb-4'>
         <h2 className='font-bold'>Trend for you</h2>
       {trendData.map((data, key) => (
         <div className='flex flex-col gap-[0.5rem]' key={key}>

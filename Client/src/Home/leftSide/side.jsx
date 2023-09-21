@@ -13,7 +13,7 @@ const side = () => {
     {/* <LogoSearch/> */}
     <div className=' flex-col gap-4 hidden sm:hidden md:hidden lg:flex'>
         <LogoSearch/>
-         <div className='p-1  h-[500px] rounded-3xl shadow-2xl flex flex-col gap-[1rem] overflow-x-clip'>
+         <div className='p-1  h-[580px]  shadow-2xl flex flex-col gap-[1rem] overflow-x-clip'>
         <div className='flex flex-col  justify-center items-center gap-[1rem]'>
           <img className='w-full  h-[12.8rem]' 
  src={
@@ -30,7 +30,7 @@ const side = () => {
         </div>
         <div className='flex flex-col items-center mt-[3rem] gap-[10px]'>
           <span className='font-bold text-2xl'>{user.firstname} {user.lastname}</span>
-          <span className=''>{user.about?user.about:" Write About YourSelf"}</span>
+          <span className='text-center'>{user.about?user.about:" Write About YourSelf"}</span>
 
         </div>
         <div >

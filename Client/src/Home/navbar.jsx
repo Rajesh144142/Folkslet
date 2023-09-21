@@ -64,20 +64,20 @@ const navbar = () => {
         </div> */}
         {chatting && (
           <Link
-            to=""
+            to="/chat"
             className="   text-2xl sm:text-3xl  transition duration-200 ease-in-out p-4"
           >
             <BiSolidMessageDetail />
           </Link>
         )}
         <Link
-          to=""
+          to="/Upcoming"
           className="  text-2xl sm:text-3xl  transition duration-200 ease-in-out p-4"
         >
           <AiOutlineSetting />
         </Link>
         <Link
-          to="../"
+          to="/Upcoming"
           className="  text-2xl sm:text-3xl  transition duration-200 ease-in-out p-4"
         >
           <IoNotifications />

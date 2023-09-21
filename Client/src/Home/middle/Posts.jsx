@@ -17,7 +17,7 @@ const Posts = () => {
     filteredPosts = posts.filter((post) => post.userId === params.id);
   }
 
-  if (loading) return <div >Fetching posts....</div>;
+  if (loading) return <div  className='text-center'>Fetching posts....</div>;
 
   if (!filteredPosts || filteredPosts.length === 0) return <div className='text-center ml-0 md:ml-10 lg:ml-0'>No Posts</div>;
   return (
