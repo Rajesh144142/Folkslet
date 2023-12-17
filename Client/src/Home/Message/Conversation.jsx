@@ -3,6 +3,7 @@ import { getUser } from "../api/UserRequests";
 import { useDispatch } from "react-redux";
 
 const Conversation = ({ data, currentUser, online }) => {
+
   const [userData, setUserData] = useState(null);
   const publicFolder = import.meta.env.VITE_PUBLIC_FOLDER;
   const dispatch = useDispatch();
@@ -24,11 +25,11 @@ const Conversation = ({ data, currentUser, online }) => {
 
   return (
     <>
-      <div className="flex items-center gap-2 mt-[0.7rem] mb-2 hover:bg-gray-100 p-1">
-        <div className="m-auto sm:m-auto md:m-0 lg:m-0">
-          {online && (
-            <div className="bg-green-400 rounded-full  w-[1rem] h-[1rem] border-[3px]   border-white hidden md:block lg:block absolute mt-10 ml-12"></div>
-          )}
+      <div className="flex items-center gap-2 mt-[0.7rem] mb-2 hover:bg-gray-100 p-1" >
+        <div className={`m-auto sm:m-auto md:m-0 lg:m-0  avatar ${online?"online":"offline"}` }  
+>
+        <div className="w-16 rounded-full border-2"  
+        >
           <img
             src={
               userData?.profilePicture
@@ -36,8 +37,9 @@ const Conversation = ({ data, currentUser, online }) => {
                 : publicFolder + "defaultProfile.png"
             }
             alt="profile"
-            className="   w-[3.5rem] h-[3.5rem] sm:w-[4rem] sm:h-[4rem] md:w-[4rem] md:h-[4rem] lg:w-[4rem] lg:h-[4rem]  rounded-[50%] border-[0.1px]"
+            className="  "
           />
+          </div>
         </div>
         <div className=" flex-col justify-start hidden sm:hidden md:flex lg:flex ">
           <span className="flex justify-start gap-1  ">

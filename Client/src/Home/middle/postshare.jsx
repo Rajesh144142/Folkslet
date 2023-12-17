@@ -88,8 +88,7 @@ const postShare = ({location}) => {
             <input
               className="rounded-[10px] p-[8px] font-[17px]  outline-none"
               type="text"
-              placeholder="What is happening"
-              ref={desc}
+                ref={desc}
               required
             />
           </div>

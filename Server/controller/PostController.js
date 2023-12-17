@@ -5,10 +5,9 @@ const UserModel = require("../models/usermodel.js");
 // Creat new Post
 const createPost = async (req, res) => {
   const newPost = new PostModel(req.body);
-
   try {
-    await newPost.save();
-    res.status(200).json("Post created!");
+    const postData = await newPost.save();
+    res.status(200).json(postData);
   } catch (error) {
     res.status(500).json(error);
   }
@@ -27,6 +26,7 @@ const getPost = async (req, res) => {
   }
 };
 
+
 // Update a post
 const updatePost = async (req, res) => {
   const postId = req.params.id;
@@ -35,8 +35,8 @@ const updatePost = async (req, res) => {
   try {
     const post = await PostModel.findById(postId);
     if (post.userId === userId) {
-      await post.updateOne({ $set: req.body });
-      res.status(200).json("Post Updated");
+      const Postupdate = await post.updateOne({ $set: req.body });
+      res.status(200).json(Postupdate);
     } else {
       res.status(403).json("Action forbidden");
     }
@@ -44,6 +44,34 @@ const updatePost = async (req, res) => {
     res.status(500).json(error);
   }
 };
+//Post comments 
+const comments = async (req, res) => {
+  try {
+    const postId = req.params.id;
+    const { userId, username, message } = req.body;
+
+    // Check if the postId exists in the database
+    const post = await PostModel.findById(postId);
+
+    if (!post) {
+      return res.status(404).json({ message: "Post not found" });
+    }
+
+    // Create a new comment object
+    const comment = {
+      userId,
+      username,
+      message,
+    };
+    post.comments.push(comment);
+    await post.save();
+    res.status(201).json( comment );
+  } catch (error) {
+    console.error("Error adding comment:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 
 // Delete a post
 const deletePost = async (req, res) => {
@@ -63,7 +91,6 @@ const deletePost = async (req, res) => {
   }
 };
 
-// like/dislike a post
 const likePost = async (req, res) => {
   const id = req.params.id;
   const { userId } = req.body;
@@ -101,15 +128,15 @@ const getTimelinePosts = async (req, res) => {
           foreignField: "userId",
           as: "followingPosts"
         }
-      },{
-        $project:{
-          followingPosts:1,
-          _id:0
+      }, {
+        $project: {
+          followingPosts: 1,
+          _id: 0
         }
       }
     ]);
-    const combinedPosts = currentUserPosts.concat(...followingPosts[0].followingPosts) .sort((a,b)=>{
-      return b.createdAt-a.createdAt;
+    const combinedPosts = currentUserPosts.concat(...followingPosts[0].followingPosts).sort((a, b) => {
+      return b.createdAt - a.createdAt;
     });
 
     res.status(200).json(combinedPosts);
@@ -118,17 +145,6 @@ const getTimelinePosts = async (req, res) => {
   }
 };
 
-// const getTimelinePosts = async (req, res) => {
-//   try {
-//     const allPosts = await PostModel.find({})
-//       .sort({ createdAt: 0})
-//       .exec();
-
-//     res.status(200).json(allPosts);
-//   } catch (error) {
-//     res.status(500).json(error);
-//   }
-// };
 module.exports = {
   createPost,
   getTimelinePosts,
@@ -136,4 +152,5 @@ module.exports = {
   likePost,
   updatePost,
   getPost,
+  comments
 };

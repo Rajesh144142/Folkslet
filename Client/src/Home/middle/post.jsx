@@ -6,14 +6,18 @@ import { likePost } from "../api/PostsRequests";
 import { getAllUser } from "../api/UserRequests.jsx";
 import { useLocation } from "react-router-dom";
 import { format } from "timeago.js"; // Import the time formatting library
-import {Link}from 'react-router-dom'
+import { Link } from "react-router-dom";
+import Comments from "../../components/commentsSection/comments";
+import ShowComents from "../../components/commentsSection/showComents";
 const Post = ({ data }) => {
   // cosnt[liked,setlike]=useState(true)
   // Use the useSelector hook to access the user object from the Redux store
   const user = useSelector((state) => state.authReducer.authData.user);
+
   const location = useLocation();
   const home = location.pathname === "/home";
   // Ensure that data.likes is always an array
+  const [allcomment, setallComment] = useState(false);
   const initialLikes = Array.isArray(data.likes) ? data.likes : [];
   const [liked, setLiked] = useState(initialLikes.includes(user?._id));
   const [likes, setLikes] = useState(initialLikes.length);
@@ -22,6 +26,7 @@ const Post = ({ data }) => {
     setLiked((prev) => !prev);
     liked ? setLikes((prev) => prev - 1) : setLikes((prev) => prev + 1);
   };
+
   const [persons, setPersons] = useState([]);
   const serverPublic = import.meta.env.VITE_PUBLIC_FOLDER;
 
@@ -36,6 +41,11 @@ const Post = ({ data }) => {
     };
     fetchPersons();
   }, []);
+
+  const handleComments = () => {
+    setallComment(!allcomment);
+  };
+
   return (
     <>
       <div className=" flex flex-col sm:flex-row  ">
@@ -96,20 +106,31 @@ const Post = ({ data }) => {
                   </div>
                 )}
               </div>
-              <div className="">
-               <Link to='/Upcoming'> <AiOutlineMessage /></Link>
+              <div className="" onClick={handleComments}>
+                <AiOutlineMessage />
               </div>
               <div className="">
-              <Link to='/Upcoming'> <PiShareFatBold /></Link>
+                <Link to="/Upcoming">
+                  <PiShareFatBold />
+                </Link>
               </div>
             </div>
             <h1>{likes} likes</h1>
+            <div className="">
+              <Comments
+                postId={data._id}
+                userId={user._id}
+                userName={user.username}
+              />
+            </div>
+            <h1 className="pl-2 pt-1">Comments:</h1>
+
+            <div>
+              {allcomment ? <ShowComents postcomment={data.comments} /> : ""}
+            </div>
           </div>
-        ) 
-        : 
-        (
+        ) : (
           <div className="flex flex-col p-[1rem] shadow-md m-auto w-[97%] bg-white  rounded-3xl gap-[1rem] sm:w-[80%] ">
-         
             <div className=" flex flex-col justify-start">
               {persons.map((person) => {
                 if (person._id === data.userId) {
@@ -148,14 +169,28 @@ const Post = ({ data }) => {
                     </div>
                   )}
                 </div>
-                <div className="">
-                <Link to='/Upcoming'><AiOutlineMessage /></Link>
+                <div className="" onClick={handleComments}>
+                  <AiOutlineMessage />
                 </div>
                 <div className="">
-                <Link to='/Upcoming'><PiShareFatBold /></Link>
+                  <Link to="/Upcoming">
+                    <PiShareFatBold />
+                  </Link>
                 </div>
               </div>
               <h1 className="pl-2">{!likes ? 0 : likes} likes</h1>
+              <div className="">
+                <Comments
+                  postId={data._id}
+                  userId={user._id}
+                  userName={user.username}
+                />
+              </div>
+              <h1 className="pl-2 pt-1">Comments:</h1>
+
+              <div>
+                {allcomment ? <ShowComents postcomment={data.comments} /> : ""}
+              </div>
             </div>
           </div>
         )}
