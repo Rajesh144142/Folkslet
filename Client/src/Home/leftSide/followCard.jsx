@@ -5,14 +5,12 @@ import FollowersModal from "./followersModel.jsx";
 import User from "../User.jsx";
 import { useParams } from "react-router-dom";
 const FollowCard = ({ location }) => {
-  const param=useParams()
-  const home=param;
+  const param = useParams();
+  const home = param;
   const [modalOpened, setModalOpened] = useState(false);
   const [persons, setPersons] = useState([]);
   const { user } = useSelector((state) => state.authReducer.authData);
-const [showmore,setshowmore]=useState(false)
-console.log(home.id===user._id)
-
+  const [showmore, setshowmore] = useState(false);
   useEffect(() => {
     const fetchPersons = async () => {
       try {
@@ -23,11 +21,9 @@ console.log(home.id===user._id)
       }
     };
     fetchPersons();
-  }, []);
+  }, [location]);
   const initialDisplayUsers = persons.slice(0, 4);
-
-  // Handle "Show more" button click
-  const handleShowMoreClick = () => {
+ const handleShowMoreClick = () => {
     if (!modalOpened) {
       setModalOpened(true); // Open the modal to show all users
     }
@@ -42,21 +38,32 @@ console.log(home.id===user._id)
           <div className="font-bold text-[15px] text-center ">
             <h3>People you may know</h3>
           </div>
-          {showmore?<div>
-          {persons.map((person, id) => {
-            if (person._id !== user._id )
-              return <User person={person} key={id} />;
-            return null;
-          })}</div>:<div>{persons.map((person, id) => {
-            if (person._id !== user._id && id<5)
-              return <User person={person} key={id} />;
-            return null;
-          })}</div>}
+          {showmore ? (
+            <div>
+              {persons.map((person, id) => {
+                if (person._id !== user._id)
+                  return <User person={person} key={id} />;
+                return null;
+              })}
+            </div>
+          ) : (
+            <div>
+              {persons.map((person, id) => {
+                if (person._id !== user._id && id < 5)
+                  return <User person={person} key={id} />;
+                return null;
+              })}
+            </div>
+          )}
 
           {/* Show more button */}
           <button
-            className={`text-center p-1 mx-auto w-[30%]  font-bold bg-slate-50 rounded-xl ${showmore?'hidden':'block'}`}
-            onClick={()=>{setshowmore(true)}}
+            className={`text-center p-1 mx-auto w-[30%]  font-bold bg-slate-50 rounded-xl ${
+              showmore ? "hidden" : "block"
+            }`}
+            onClick={() => {
+              setshowmore(true);
+            }}
           >
             Show more
           </button>
@@ -65,7 +72,11 @@ console.log(home.id===user._id)
     } else {
       // Render default content for other locations
       return (
-        <div className={`shadow-sm p-2 w-full border-2 rounded-[0.7rem] gap-[1rem]  flex-col text-[13px] ${home.id===user._id?'block':'hidden'} md:flex lg:flex`}>
+        <div
+          className={`shadow-sm p-2 w-full border-2 rounded-[0.7rem] gap-[1rem]  flex-col text-[13px] ${
+            home.id === user._id ? "block" : "hidden"
+          } md:flex lg:flex`}
+        >
           <div className="font-bold text-[15px] text-center">
             <h3>People you may know</h3>
           </div>

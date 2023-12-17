@@ -3,6 +3,7 @@ import { getTimelinePosts } from '../action/PostAction';
 import Post from './post';
 import { useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
+// import ShowComents from "../../components/commentsSection/showComents";
 
 const Posts = () => {
   const params = useParams();
@@ -23,8 +24,12 @@ const Posts = () => {
   return (
     <div className="flex flex-col gap-6 ">
       {filteredPosts.map((post,id ) => (
-        <Post  data={post} key={id} /> // Use a unique identifier as the key
-      
+        <div key={id}>
+          
+        <Post  data={post}  />     
+
+        
+        </div>// Use a unique identifier as the key
       ))}
     </div>
   );

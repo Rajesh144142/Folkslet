@@ -7,14 +7,11 @@ import store from './Home/store.jsx';
 import { BrowserRouter,Routes,Route } from 'react-router-dom';
 // Instead of using ReactDOM.render, use createRoot
 ReactDOM.createRoot(document.getElementById('root')).render(
-  <React.StrictMode>
     <Provider store={store}>
       <BrowserRouter>
       <Routes>
         <Route path="*" element={<App />}/>
-
       </Routes>
       </BrowserRouter>
     </Provider>
-  </React.StrictMode>
 );

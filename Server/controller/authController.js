@@ -91,7 +91,6 @@ JWTKEY = "your_secret_key_here"
 
 // Register new user
 const signup = async (req, res) => {
-
   const salt = await bcrypt.genSalt(10);
   const hashedPass = await bcrypt.hash(req.body.password, salt);
   req.body.password = hashedPass
@@ -146,4 +145,5 @@ const signin = async (req, res) => {
     res.status(500).json(err);
   }
 };
+
 module.exports = { signup, signin };
