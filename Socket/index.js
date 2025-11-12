@@ -1,39 +1,82 @@
-const io = require("socket.io")(8800, {
+require('dotenv').config();
+const { Server } = require('socket.io');
+
+const port = Number(process.env.SOCKET_PORT || 8800);
+const allowedOrigins = (process.env.SOCKET_ALLOWED_ORIGINS || 'http://localhost:5173')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter((origin) => origin.length > 0);
+
+const io = new Server(port, {
   cors: {
-    origin: "http://localhost:5173",
+    origin: allowedOrigins,
+    credentials: true,
   },
+  transports: ['websocket', 'polling'],
+  pingTimeout: Number(process.env.SOCKET_PING_TIMEOUT || 25000),
+  pingInterval: Number(process.env.SOCKET_PING_INTERVAL || 20000),
 });
 
-let activeUsers = [];
+const activeUsers = new Map();
 
-io.on("connection", (socket) => {
-  // add new User
-  socket.on("new-user-add", (newUserId) => {
-    // if user is not added previously
-    if (!activeUsers.some((user) => user.userId === newUserId)) {
-      activeUsers.push({ userId: newUserId, socketId: socket.id });
-      // console.log("New User Connected", activeUsers);
+const serializeUsers = () =>
+  Array.from(activeUsers.entries()).map(([userId, socketId]) => ({ userId, socketId }));
+
+io.on('connection', (socket) => {
+  socket.on('new-user-add', (userId) => {
+    if (!userId) {
+      return;
     }
-    // send all active users to new user
-    io.emit("get-users", activeUsers);
+    activeUsers.set(userId, socket.id);
+    io.emit('get-users', serializeUsers());
   });
 
-  socket.on("disconnect", () => {
-    // remove user from active users
-    activeUsers = activeUsers.filter((user) => user.socketId !== socket.id);
-    // console.log("User Disconnected", activeUsers);
-    // send all active users to all users
-    io.emit("get-users", activeUsers);
+  socket.on('disconnect', () => {
+    for (const [userId, socketId] of activeUsers.entries()) {
+      if (socketId === socket.id) {
+        activeUsers.delete(userId);
+      }
+    }
+    io.emit('get-users', serializeUsers());
   });
 
-  // send message to a specific user
-  socket.on("send-message", (data) => {
-    const { receiverId } = data;
-    const user = activeUsers.find((user) => user.userId === receiverId);
-    // console.log("Sending from socket to :", receiverId)
-    // console.log("Data: ", data)
-    if (user) {
-      io.to(user.socketId).emit("recieve-message", data);
+  socket.on('send-message', (payload) => {
+    if (!payload || typeof payload !== 'object') {
+      return;
+    }
+    const { receiverId } = payload;
+    if (!receiverId) {
+      return;
+    }
+    const socketId = activeUsers.get(receiverId);
+    if (socketId) {
+      io.to(socketId).emit('recieve-message', payload);
     }
   });
+
+  socket.on('typing', (payload) => {
+    if (!payload || typeof payload !== 'object') {
+      return;
+    }
+    const { receiverId, chatId, senderId, isTyping } = payload;
+    if (!receiverId || !chatId || !senderId) {
+      return;
+    }
+    const socketId = activeUsers.get(receiverId);
+    if (socketId) {
+      io.to(socketId).emit('typing-status', {
+        chatId,
+        senderId,
+        isTyping: Boolean(isTyping),
+      });
+    }
+  });
+
+  socket.on('error', (error) => {
+    console.error('Socket client error', error);
+  });
+});
+
+io.on('error', (error) => {
+  console.error('Socket server error', error);
 });

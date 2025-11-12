@@ -91,24 +91,41 @@ JWTKEY = "your_secret_key_here"
 
 // Register new user
 const signup = async (req, res) => {
+  const { email, username } = req.body;
   const salt = await bcrypt.genSalt(10);
   const hashedPass = await bcrypt.hash(req.body.password, salt);
-  req.body.password = hashedPass
-  const newUser = new UserModel(req.body);
-  const { username } = req.body
+  req.body.password = hashedPass;
+
   try {
-    // addition new
-    const oldUser = await UserModel.findOne({ username });
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
 
-    if (oldUser)
-      return res.status(400).json({ message: "User already exists" });
+    const normalizedEmail = email.toLowerCase();
+    const existingEmail = await UserModel.findOne({ email: normalizedEmail });
+    if (existingEmail) {
+      return res.status(400).json({ message: 'Email already exists' });
+    }
 
-    // changed
+    const baseUsername = (username || normalizedEmail.split('@')[0] || '').toLowerCase().replace(/[^a-z0-9_]+/g, '');
+    let finalUsername = baseUsername || `user${Date.now()}`;
+    let counter = 1;
+    while (await UserModel.exists({ username: finalUsername })) {
+      finalUsername = `${baseUsername || 'user'}${counter}`;
+      counter += 1;
+    }
+
+    const newUser = new UserModel({
+      ...req.body,
+      email: normalizedEmail,
+      username: finalUsername,
+    });
+
     const user = await newUser.save();
     const token = jwt.sign(
-      { username: user.username, id: user._id },
+      { email: user.email, username: user.username, id: user._id },
       process.env.JWTKEY,
-      { expiresIn: "1h" }
+      { expiresIn: process.env.JWT_EXPIRES_IN }
     );
     res.status(200).json({ user, token });
   } catch (error) {
@@ -120,29 +137,34 @@ const signup = async (req, res) => {
 
 // Changed
 const signin = async (req, res) => {
-  const { username, password } = req.body;
+  const { email, password } = req.body;
 
   try {
-    const user = await UserModel.findOne({ username: username });
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
+
+    const normalizedEmail = email.toLowerCase();
+    const user = await UserModel.findOne({ email: normalizedEmail });
 
     if (user) {
       const validity = await bcrypt.compare(password, user.password);
 
       if (!validity) {
-        res.status(400).json("wrong password");
+        return res.status(400).json({ message: 'Wrong password' });
       } else {
         const token = jwt.sign(
-          { username: user.username, id: user._id },
+          { email: user.email, username: user.username, id: user._id },
           process.env.JWTKEY,
-          { expiresIn: "1h" }
+          { expiresIn: process.env.JWT_EXPIRES_IN || '1h' }
         );
         res.status(200).json({ user, token });
       }
     } else {
-      res.status(404).json("User not found");
+      return res.status(404).json({ message: 'User not found' });
     }
   } catch (err) {
-    res.status(500).json(err);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 };
 

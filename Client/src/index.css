@@ -1,3 +1,87 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+*{
+  margin: 0;
+  padding: 0;
+}
+@layer base {
+  :root {
+    color-scheme: light;
+    --color-primary: #4f46e5;
+    --color-secondary: #f97316;
+    --color-accent: #10b981;
+    --color-background: #eef2ff;
+    --color-surface: #ffffff;
+    --color-surface-alt: #e0e7ff;
+    --color-text-base: #0f172a;
+    --color-text-muted: #475569;
+    --color-border: #c7d2fe;
+    --color-on-primary: #ffffff;
+    --color-on-secondary: #0f172a;
+  }
+
+  :root[data-theme='light'] {
+    color-scheme: light;
+    --color-primary: #4f46e5;
+    --color-secondary: #f97316;
+    --color-accent: #10b981;
+    --color-background: #eef2ff;
+    --color-surface: #ffffff;
+    --color-surface-alt: #e0e7ff;
+    --color-text-base: #0f172a;
+    --color-text-muted: #475569;
+    --color-border: #c7d2fe;
+    --color-on-primary: #ffffff;
+    --color-on-secondary: #0f172a;
+  }
+
+  :root[data-theme='dark'] {
+    color-scheme: dark;
+    --color-primary: #818cf8;
+    --color-secondary: #fb923c;
+    --color-accent: #34d399;
+    --color-background: #050421;
+    --color-surface: #0f172a;
+    --color-surface-alt: #1e293b;
+    --color-text-base: #e2e8f0;
+    --color-text-muted: #94a3b8;
+    --color-border: #1e3a8a;
+    --color-on-primary: #050421;
+    --color-on-secondary: #050421;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme]) {
+      color-scheme: dark;
+      --color-primary: #818cf8;
+      --color-secondary: #fb923c;
+      --color-accent: #34d399;
+      --color-background: #050421;
+      --color-surface: #0f172a;
+      --color-surface-alt: #1e293b;
+      --color-text-base: #e2e8f0;
+      --color-text-muted: #94a3b8;
+      --color-border: #1e3a8a;
+      --color-on-primary: #050421;
+      --color-on-secondary: #050421;
+    }
+  }
+
+  body {
+    @apply min-h-screen antialiased transition-colors duration-200;
+    background-color: var(--color-background);
+    color: var(--color-text-base);
+  }
+}
+
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
