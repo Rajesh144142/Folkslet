@@ -106,10 +106,9 @@ const callInference = async ({ token, model, prompt, parameters }) => {
   };
 
   const candidates = [
-    `${baseUrl}/text-generation`,
     `${baseUrl}/models/${encodeURIComponent(model)}`,
-    `${baseUrl}/v1/text-generation`,
-    `https://api-inference.huggingface.co/models/${encodeURIComponent(model)}`,
+    `${baseUrl}/v1/text-generation?model=${encodeURIComponent(model)}`,
+    `${baseUrl}/text-generation?model=${encodeURIComponent(model)}`,
   ];
 
   let lastError = null;
@@ -153,12 +152,16 @@ const generateTrends = async ({ documents, windowStart, windowEnd }) => {
   if (!token) {
     return null;
   }
+  console.log('token', token);
   const model = process.env.HF_TREND_MODEL || DEFAULT_MODEL;
+  console.log('model', model);
   const limitedDocuments = Array.isArray(documents) ? documents.slice(0, MAX_ITEMS) : [];
   if (limitedDocuments.length === 0) {
     return [];
   }
+  console.log('limitedDocuments', limitedDocuments);
   const prompt = buildPrompt(limitedDocuments, windowStart, windowEnd);
+  console.log('prompt', prompt);
   try {
     const raw = await callInference({
       token,
@@ -170,6 +173,7 @@ const generateTrends = async ({ documents, windowStart, windowEnd }) => {
         return_full_text: false,
       },
     });
+    console.log('raw', raw);
     let completion = '';
     if (typeof raw === 'string') {
       completion = raw;
