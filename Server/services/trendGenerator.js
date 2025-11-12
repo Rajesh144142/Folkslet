@@ -109,6 +109,7 @@ const callInference = async ({ token, model, prompt, parameters }) => {
     `${baseUrl}/text-generation`,
     `${baseUrl}/models/${encodeURIComponent(model)}`,
     `${baseUrl}/v1/text-generation`,
+    `https://api-inference.huggingface.co/models/${encodeURIComponent(model)}`,
   ];
 
   let lastError = null;
@@ -117,7 +118,10 @@ const callInference = async ({ token, model, prompt, parameters }) => {
     try {
       const response = await fetch(url, {
         method: 'POST',
-        headers,
+        headers: {
+          ...headers,
+          'x-wait-for-model': 'true',
+        },
         body: payload,
       });
 
