@@ -15,19 +15,11 @@ const Message = () => {
   const [currentChat, setcurrentChat] = useState(null);
   const socket = useRef();
   const [onlineUsers, setOnlineUsers] = useState([]);
-<<<<<<< HEAD
-  useEffect(() => {
-    socket.current = io("http://localhost:8800");
-    socket.current.emit("new-user-add", user._id);
-    socket.current.on("get-users", (users) => {
-      // console.log(users)
-      setOnlineUsers(users);
-    });
-=======
   const [isDesktop, setIsDesktop] = useState(false);
   const [showList, setShowList] = useState(true);
   const [typingStatus, setTypingStatus] = useState({});
   const [incomingCall, setIncomingCall] = useState(null);
+  const [setsendTyping, setSetsendTyping] = useState(null);
   useEffect(() => {
     const socketUrl = import.meta.env.VITE_SOCKET_URL || "http://localhost:8800";
     const socketInstance = io(socketUrl);
@@ -67,7 +59,6 @@ const Message = () => {
       socketInstance.off("incoming-call", handleIncomingCall);
       socketInstance.disconnect();
     };
->>>>>>> c32dbde (feat: Add WebRTC video/audio calling, profile improvements, and update documentation)
   }, [user]);
   useEffect(() => {
     const getChats = async () => {
@@ -145,7 +136,6 @@ const Message = () => {
             ))}
           </div>
         </div>
-<<<<<<< HEAD
       </div>
       <div className="overflow-y-auto h-[calc(100vh-2rem)]">
         <style>
@@ -153,14 +143,6 @@ const Message = () => {
        
         `}
         </style>
-        <div className="text-center">
-          <Chat
-            chat={currentChat}
-            currentUser={user._id}
-            setsendMessage={setsendMessage}
-            recieveMessage={recieveMessage}
-          />
-=======
         <div
           className={`${
             showList && !isDesktop ? "hidden" : "flex"
@@ -204,7 +186,6 @@ const Message = () => {
               <p className="text-sm">Send private messages to friends and followers.</p>
             </div>
           )}
->>>>>>> c32dbde (feat: Add WebRTC video/audio calling, profile improvements, and update documentation)
         </div>
       </div>
 

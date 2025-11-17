@@ -36,8 +36,6 @@ io.on("connection", (socket) => {
       io.to(user.socketId).emit("recieve-message", data);
     }
   });
-<<<<<<< HEAD
-=======
 
   socket.on('typing', (payload) => {
     if (!payload || typeof payload !== 'object') {
@@ -47,9 +45,9 @@ io.on("connection", (socket) => {
     if (!receiverId || !chatId || !senderId) {
       return;
     }
-    const socketId = activeUsers.get(receiverId);
-    if (socketId) {
-      io.to(socketId).emit('typing-status', {
+    const user = activeUsers.find((user) => user.userId === receiverId);
+    if (user) {
+      io.to(user.socketId).emit('typing-status', {
         chatId,
         senderId,
         isTyping: Boolean(isTyping),
@@ -65,9 +63,9 @@ io.on("connection", (socket) => {
     if (!receiverId || !offer || !senderId) {
       return;
     }
-    const socketId = activeUsers.get(receiverId);
-    if (socketId) {
-      io.to(socketId).emit('incoming-call', {
+    const user = activeUsers.find((user) => user.userId === receiverId);
+    if (user) {
+      io.to(user.socketId).emit('incoming-call', {
         senderId,
         senderName,
         offer,
@@ -84,9 +82,9 @@ io.on("connection", (socket) => {
     if (!receiverId || !answer) {
       return;
     }
-    const socketId = activeUsers.get(receiverId);
-    if (socketId) {
-      io.to(socketId).emit('call-accepted', { answer });
+    const user = activeUsers.find((user) => user.userId === receiverId);
+    if (user) {
+      io.to(user.socketId).emit('call-accepted', { answer });
     }
   });
 
@@ -98,9 +96,9 @@ io.on("connection", (socket) => {
     if (!receiverId) {
       return;
     }
-    const socketId = activeUsers.get(receiverId);
-    if (socketId) {
-      io.to(socketId).emit('call-rejected');
+    const user = activeUsers.find((user) => user.userId === receiverId);
+    if (user) {
+      io.to(user.socketId).emit('call-rejected');
     }
   });
 
@@ -112,9 +110,9 @@ io.on("connection", (socket) => {
     if (!receiverId) {
       return;
     }
-    const socketId = activeUsers.get(receiverId);
-    if (socketId) {
-      io.to(socketId).emit('call-ended');
+    const user = activeUsers.find((user) => user.userId === receiverId);
+    if (user) {
+      io.to(user.socketId).emit('call-ended');
     }
   });
 
@@ -126,9 +124,9 @@ io.on("connection", (socket) => {
     if (!receiverId || !candidate) {
       return;
     }
-    const socketId = activeUsers.get(receiverId);
-    if (socketId) {
-      io.to(socketId).emit('ice-candidate', { candidate });
+    const user = activeUsers.find((user) => user.userId === receiverId);
+    if (user) {
+      io.to(user.socketId).emit('ice-candidate', { candidate });
     }
   });
 
@@ -139,5 +137,4 @@ io.on("connection", (socket) => {
 
 io.on('error', (error) => {
   console.error('Socket server error', error);
->>>>>>> c32dbde (feat: Add WebRTC video/audio calling, profile improvements, and update documentation)
 });
