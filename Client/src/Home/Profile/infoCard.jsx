@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { BiSolidPencil ,BiSolidMapPin} from "react-icons/bi";
 import ProfileModal from "./profileModel";
 import { useDispatch, useSelector } from "react-redux";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import * as UserApi from "../api/UserRequests";
 import { logout } from "../action/AuthActions";
 import {AiOutlineHeart}from 'react-icons/ai'
@@ -21,35 +21,35 @@ const InfoCard = () => {
   };
 
   useEffect(() => {
-    const fatchProfileUser = async () => {
-      if (profileUserId === user._id) {
-        setProfileUser(user);
+    const fetchProfileUser = async () => {
+      if (!profileUserId || profileUserId === user?._id) {
+        setProfileUser(user || {});
+      } else {
+        try {
+          const profileDetails = await UserApi.getUser(profileUserId);
+          setProfileUser(profileDetails.data || profileDetails);
+        } catch (error) {
+          setProfileUser({});
+        }
       }
-      else {
-        const profileUser = await UserApi.getUser(profileUserId);
-        setProfileUser(profileUser);
-      }
+    };
+    if (user) {
+      fetchProfileUser();
     }
-    fatchProfileUser();
-  }, [user]);
+  }, [profileUserId, user]);
 
   return (
-    <div className="flex flex-col gap-[1rem] p-[1rem] rounded-[1rem]  bg-slate-200 m-auto w-[100%] ">
-      <div className="flex justify-between items-center hover:cursor-pointer">
-        <h4 className="font-bold">Profile Info</h4>
-        
-        {user._id === profileUserId ? (<div>
-          <BiSolidPencil
-            className="w-[2rem] h-[1.2rem]"
-            onClick={() => setModalOpened(true)}
-          />
-          <ProfileModal
-            modalOpened={modalOpened}
-            setModalOpened={setModalOpened}
-            data={user}
-          />
-        </div>) : ("")}
-
+    <div className="flex flex-col gap-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-sm">
+      <div className="flex items-center justify-between">
+        <h4 className="text-lg font-semibold text-[var(--color-text-base)]">Profile Info</h4>
+        {(user?._id === profileUserId || !profileUserId) && (
+          <Link
+            to="/settings"
+            className="rounded-full border border-[var(--color-border)] px-4 py-1 text-sm font-semibold text-[var(--color-text-muted)] transition hover:bg-[var(--color-border)]/40 hover:text-[var(--color-text-base)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+          >
+            Edit in settings
+          </Link>
+        )}
       </div>
 
       {/* Display user information here */}
@@ -92,13 +92,14 @@ const InfoCard = () => {
         <span className=" font-bold ml-2">
           {profileUser.relationship}</span>
       </div>
-
-      <button
-        className="w-[7rem] h-[2rem] mt-[2rem] self-end bg-slate-300 rounded-md hover:bg-slate-400"
-        onClick={handleLogOut}
-      >
-        Logout
-      </button>
+      {(user?._id === profileUserId || !profileUserId) && (
+        <button
+          className="self-end rounded-full bg-[var(--color-border)] px-4 py-2 text-sm font-semibold text-[var(--color-text-base)] transition hover:bg-[var(--color-primary)] hover:text-[var(--color-on-primary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+          onClick={handleLogOut}
+        >
+          Logout
+        </button>
+      )}
     </div>
   );
 };

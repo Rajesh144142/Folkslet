@@ -36,4 +36,105 @@ io.on("connection", (socket) => {
       io.to(user.socketId).emit("recieve-message", data);
     }
   });
+
+  socket.on('typing', (payload) => {
+    if (!payload || typeof payload !== 'object') {
+      return;
+    }
+    const { receiverId, chatId, senderId, isTyping } = payload;
+    if (!receiverId || !chatId || !senderId) {
+      return;
+    }
+    const user = activeUsers.find((user) => user.userId === receiverId);
+    if (user) {
+      io.to(user.socketId).emit('typing-status', {
+        chatId,
+        senderId,
+        isTyping: Boolean(isTyping),
+      });
+    }
+  });
+
+  socket.on('call-user', (payload) => {
+    if (!payload || typeof payload !== 'object') {
+      return;
+    }
+    const { receiverId, offer, senderId, senderName, callType } = payload;
+    if (!receiverId || !offer || !senderId) {
+      return;
+    }
+    const user = activeUsers.find((user) => user.userId === receiverId);
+    if (user) {
+      io.to(user.socketId).emit('incoming-call', {
+        senderId,
+        senderName,
+        offer,
+        callType: callType || 'video',
+      });
+    }
+  });
+
+  socket.on('call-accepted', (payload) => {
+    if (!payload || typeof payload !== 'object') {
+      return;
+    }
+    const { receiverId, answer } = payload;
+    if (!receiverId || !answer) {
+      return;
+    }
+    const user = activeUsers.find((user) => user.userId === receiverId);
+    if (user) {
+      io.to(user.socketId).emit('call-accepted', { answer });
+    }
+  });
+
+  socket.on('call-rejected', (payload) => {
+    if (!payload || typeof payload !== 'object') {
+      return;
+    }
+    const { receiverId } = payload;
+    if (!receiverId) {
+      return;
+    }
+    const user = activeUsers.find((user) => user.userId === receiverId);
+    if (user) {
+      io.to(user.socketId).emit('call-rejected');
+    }
+  });
+
+  socket.on('call-ended', (payload) => {
+    if (!payload || typeof payload !== 'object') {
+      return;
+    }
+    const { receiverId } = payload;
+    if (!receiverId) {
+      return;
+    }
+    const user = activeUsers.find((user) => user.userId === receiverId);
+    if (user) {
+      io.to(user.socketId).emit('call-ended');
+    }
+  });
+
+  socket.on('ice-candidate', (payload) => {
+    if (!payload || typeof payload !== 'object') {
+      return;
+    }
+    const { receiverId, candidate } = payload;
+    if (!receiverId || !candidate) {
+      return;
+    }
+    const user = activeUsers.find((user) => user.userId === receiverId);
+    if (user) {
+      io.to(user.socketId).emit('ice-candidate', { candidate });
+    }
+  });
+
+  socket.on('error', (error) => {
+    console.error('Socket client error', error);
+  });
+});
+
+io.on('error', (error) => {
+  console.error('Socket server error', error);
 });
