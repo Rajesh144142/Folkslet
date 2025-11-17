@@ -24,18 +24,11 @@ const signup = async (req, res) => {
     if (oldUser)
       return res.status(400).json({ message: "User already exists" });
 
-    // changed
     const user = await newUser.save();
     const token = jwt.sign(
-<<<<<<< HEAD
-      { username: user.username, id: user._id },
-      process.env.JWTKEY,
-      { expiresIn: "1h" }
-=======
       { email: user.email, username: user.username, id: user._id },
       JWT_SECRET,
       { expiresIn: JWT_EXPIRES_IN }
->>>>>>> c32dbde (feat: Add WebRTC video/audio calling, profile improvements, and update documentation)
     );
     res.status(200).json({ user, token });
   } catch (error) {
@@ -59,15 +52,9 @@ const signin = async (req, res) => {
         res.status(400).json("wrong password");
       } else {
         const token = jwt.sign(
-<<<<<<< HEAD
-          { username: user.username, id: user._id },
-          process.env.JWTKEY,
-          { expiresIn: "1h" }
-=======
           { email: user.email, username: user.username, id: user._id },
           JWT_SECRET,
           { expiresIn: JWT_EXPIRES_IN }
->>>>>>> c32dbde (feat: Add WebRTC video/audio calling, profile improvements, and update documentation)
         );
         res.status(200).json({ user, token });
       }
