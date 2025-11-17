@@ -72,6 +72,81 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on('call-user', (payload) => {
+    if (!payload || typeof payload !== 'object') {
+      return;
+    }
+    const { receiverId, offer, senderId, senderName, callType } = payload;
+    if (!receiverId || !offer || !senderId) {
+      return;
+    }
+    const socketId = activeUsers.get(receiverId);
+    if (socketId) {
+      io.to(socketId).emit('incoming-call', {
+        senderId,
+        senderName,
+        offer,
+        callType: callType || 'video',
+      });
+    }
+  });
+
+  socket.on('call-accepted', (payload) => {
+    if (!payload || typeof payload !== 'object') {
+      return;
+    }
+    const { receiverId, answer } = payload;
+    if (!receiverId || !answer) {
+      return;
+    }
+    const socketId = activeUsers.get(receiverId);
+    if (socketId) {
+      io.to(socketId).emit('call-accepted', { answer });
+    }
+  });
+
+  socket.on('call-rejected', (payload) => {
+    if (!payload || typeof payload !== 'object') {
+      return;
+    }
+    const { receiverId } = payload;
+    if (!receiverId) {
+      return;
+    }
+    const socketId = activeUsers.get(receiverId);
+    if (socketId) {
+      io.to(socketId).emit('call-rejected');
+    }
+  });
+
+  socket.on('call-ended', (payload) => {
+    if (!payload || typeof payload !== 'object') {
+      return;
+    }
+    const { receiverId } = payload;
+    if (!receiverId) {
+      return;
+    }
+    const socketId = activeUsers.get(receiverId);
+    if (socketId) {
+      io.to(socketId).emit('call-ended');
+    }
+  });
+
+  socket.on('ice-candidate', (payload) => {
+    if (!payload || typeof payload !== 'object') {
+      return;
+    }
+    const { receiverId, candidate } = payload;
+    if (!receiverId || !candidate) {
+      return;
+    }
+    const socketId = activeUsers.get(receiverId);
+    if (socketId) {
+      io.to(socketId).emit('ice-candidate', { candidate });
+    }
+  });
+
   socket.on('error', (error) => {
     console.error('Socket client error', error);
   });

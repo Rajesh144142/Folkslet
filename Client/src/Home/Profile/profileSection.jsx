@@ -1,30 +1,57 @@
+import { useEffect, useState } from 'react';
 import { Grid } from '@mui/material';
 import { useSelector } from 'react-redux';
-import { Link } from 'react-router-dom';
-import { AiOutlineArrowLeft } from 'react-icons/ai';
+import { Link, useParams } from 'react-router-dom';
 
 import ProfileLeft from './ProfileLeft';
 import PostComposer from '../../features/home/components/middle/PostComposer';
 import PostList from '../../features/home/components/middle/PostList';
 import { assetUrl } from '../../utils/assets';
+import * as UserApi from '../../features/home/api/UserRequests';
 
 const ProfileSection = () => {
   const authData = useSelector((state) => state.authReducer.authData);
   const postsState = useSelector((state) => state.postReducer.posts);
   const user = authData?.user;
   const posts = Array.isArray(postsState) ? postsState : [];
+  const params = useParams();
+  const profileUserId = params.id;
+  const [profileUser, setProfileUser] = useState(null);
 
-  if (!user) {
+  useEffect(() => {
+    const fetchProfileUser = async () => {
+      if (!profileUserId) {
+        setProfileUser(user);
+        return;
+      }
+      if (profileUserId === user?._id) {
+        setProfileUser(user);
+      } else {
+        try {
+          const profileDetails = await UserApi.getUser(profileUserId);
+          setProfileUser(profileDetails);
+        } catch (error) {
+          setProfileUser(null);
+        }
+      }
+    };
+    if (user) {
+      fetchProfileUser();
+    }
+  }, [profileUserId, user]);
+
+  if (!user || !profileUser) {
     return null;
   }
 
-  const totalPosts = posts.reduce((count, post) => (post?.userId === user._id ? count + 1 : count), 0);
-  const fullName = [user.firstname, user.lastname].filter(Boolean).join(' ').trim() || user.username || 'User';
-  const about = user.about?.trim() || 'Write about yourself';
-  const followingCount = Array.isArray(user.following) ? user.following.length : 0;
-  const followerCount = Array.isArray(user.followers) ? user.followers.length : 0;
-  const coverSrc = assetUrl(user.coverPicture, 'BackgroundProfiledefault.jpg');
-  const avatarSrc = assetUrl(user.profilePicture, 'defaultProfile.png');
+  const isOwnProfile = user._id === profileUserId || !profileUserId;
+  const totalPosts = posts.reduce((count, post) => (post?.userId === profileUser._id ? count + 1 : count), 0);
+  const fullName = [profileUser.firstname, profileUser.lastname].filter(Boolean).join(' ').trim() || profileUser.username || 'User';
+  const about = profileUser.about?.trim() || 'Write about yourself';
+  const followingCount = Array.isArray(profileUser.following) ? profileUser.following.length : 0;
+  const followerCount = Array.isArray(profileUser.followers) ? profileUser.followers.length : 0;
+  const coverSrc = assetUrl(profileUser.coverPicture, 'BackgroundProfiledefault.jpg');
+  const avatarSrc = assetUrl(profileUser.profilePicture, 'defaultProfile.png');
 
   return (
     <div className="w-full ">
@@ -48,18 +75,24 @@ const ProfileSection = () => {
               <h1 className="text-3xl font-semibold text-[var(--color-text-base)]">{fullName}</h1>
               <p className="text-sm text-[var(--color-text-muted)]">{about}</p>
               <div className="mt-6 grid w-full grid-cols-3 divide-x divide-[var(--color-border)] overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)]/60 backdrop-blur">
-                <div className="flex flex-col items-center gap-1 py-5">
+                <Link
+                  to={`/profile/${profileUser._id}/following`}
+                  className="flex flex-col items-center gap-1 py-5 transition hover:bg-[var(--color-background)]/80"
+                >
                   <span className="text-xl font-semibold text-[var(--color-primary)]">{followingCount}</span>
                   <span className="text-xs font-medium uppercase tracking-widest text-[var(--color-text-muted)]">
                     Following
                   </span>
-                </div>
-                <div className="flex flex-col items-center gap-1 py-5">
+                </Link>
+                <Link
+                  to={`/profile/${profileUser._id}/followers`}
+                  className="flex flex-col items-center gap-1 py-5 transition hover:bg-[var(--color-background)]/80"
+                >
                   <span className="text-xl font-semibold text-[var(--color-accent)]">{followerCount}</span>
                   <span className="text-xs font-medium uppercase tracking-widest text-[var(--color-text-muted)]">
                     Followers
                   </span>
-                </div>
+                </Link>
                 <div className="flex flex-col items-center gap-1 py-5">
                   <span className="text-xl font-semibold text-[var(--color-secondary)]">{totalPosts}</span>
                   <span className="text-xs font-medium uppercase tracking-widest text-[var(--color-text-muted)]">
@@ -75,7 +108,7 @@ const ProfileSection = () => {
         </Grid>
         <Grid item xs={12} lg={8}>
           <div className="flex flex-col gap-4">
-            <PostComposer />
+            {isOwnProfile && <PostComposer />}
             <PostList />
           </div>
         </Grid>

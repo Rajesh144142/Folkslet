@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { Link } from "react-router-dom";
 import { getUser } from "../../features/home/api/UserRequests";
 import { PiMessengerLogoLight } from "react-icons/pi";
 import { useSelector } from "react-redux";
@@ -8,15 +9,36 @@ import { AiOutlineSend, AiOutlinePlusSquare } from "react-icons/ai";
 import { addMessage, getMessages } from "../../features/home/api/MessageRequests";
 import { format } from "timeago.js";
 import InputEmoji from "react-input-emoji";
-import { Link } from "react-router-dom";
 import { assetUrl } from "../../utils/assets";
-const Chat = ({ chat, currentUser, setsendMessage, recieveMessage, setsendTyping, typingUserId }) => {
+import VideoCall from "./VideoCall";
+const Chat = ({ chat, currentUser, setsendMessage, recieveMessage, setsendTyping, typingUserId, socket, onIncomingCall }) => {
   const user = useSelector((state) => state.authReducer.authData.user);
   const [userData, setUserData] = useState(null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
+  const [activeCall, setActiveCall] = useState(null);
+  const [localIncomingCall, setLocalIncomingCall] = useState(null);
   const scroll = useRef(null);
   const typingTimeout = useRef(null);
+
+  useEffect(() => {
+    if (!socket || !chat) return;
+
+    const handleIncomingCall = (data) => {
+      const receiverId = chat?.members?.find((id) => id !== currentUser);
+      if (data && receiverId === data.senderId) {
+        setLocalIncomingCall(data);
+        if (onIncomingCall) {
+          onIncomingCall(data);
+        }
+      }
+    };
+
+    socket.on('incoming-call', handleIncomingCall);
+    return () => {
+      socket.off('incoming-call', handleIncomingCall);
+    };
+  }, [socket, chat, currentUser, onIncomingCall]);
   const emitTyping = useCallback(
     (isTyping) => {
       if (!chat) {
@@ -162,12 +184,20 @@ const Chat = ({ chat, currentUser, setsendMessage, recieveMessage, setsendTyping
           </div>
         </div>
         <div className="hidden items-center gap-4 text-xl text-[var(--color-text-muted)] sm:flex">
-          <Link to="/Upcoming" className="transition hover:text-[var(--color-text-base)]">
+          <button
+            onClick={() => setActiveCall({ type: 'audio', user: userData })}
+            className="transition hover:text-[var(--color-text-base)]"
+            disabled={!userData}
+          >
             <IoCallOutline />
-          </Link>
-          <Link to="/Upcoming" className="transition hover:text-[var(--color-text-base)]">
+          </button>
+          <button
+            onClick={() => setActiveCall({ type: 'video', user: userData })}
+            className="transition hover:text-[var(--color-text-base)]"
+            disabled={!userData}
+          >
             <BsCameraVideo />
-          </Link>
+          </button>
         </div>
       </header>
       <div className="flex-1 overflow-y-auto px-4 py-6">
@@ -185,10 +215,10 @@ const Chat = ({ chat, currentUser, setsendMessage, recieveMessage, setsendTyping
                 </span>
                 {message?.text && (
                   <span
-                    className={`rounded-2xl px-4 py-2 text-sm ${
+                    className={`rounded-2xl border px-4 py-2 text-sm ${
                       isOwn
-                        ? "bg-[var(--color-primary)] text-[var(--color-on-primary)]"
-                        : "bg-[var(--color-border)]/40 text-[var(--color-text-base)]"
+                        ? "border-[var(--color-primary)]/30 bg-[var(--color-primary)] text-[var(--color-on-primary)]"
+                        : "border-[var(--color-border)] bg-[var(--color-border)]/40 text-[var(--color-text-base)]"
                     }`}
                   >
                     {message.text}
@@ -231,6 +261,38 @@ const Chat = ({ chat, currentUser, setsendMessage, recieveMessage, setsendTyping
           </button>
         </div>
       </form>
+      {activeCall && (
+        <VideoCall
+          callType={activeCall.type}
+          remoteUser={activeCall.user}
+          onEndCall={() => setActiveCall(null)}
+          socket={socket}
+          isIncoming={false}
+        />
+      )}
+      {localIncomingCall && (
+        <VideoCall
+          callType={localIncomingCall.callType}
+          remoteUser={localIncomingCall.sender || { _id: localIncomingCall.senderId, firstname: localIncomingCall.senderName }}
+          onEndCall={() => {
+            setLocalIncomingCall(null);
+            if (onIncomingCall) {
+              onIncomingCall(null);
+            }
+          }}
+          socket={socket}
+          isIncoming={true}
+          offer={localIncomingCall.offer}
+          onCallAccepted={() => {
+            const senderUser = localIncomingCall.sender || { _id: localIncomingCall.senderId, firstname: localIncomingCall.senderName };
+            setActiveCall({ type: localIncomingCall.callType, user: senderUser });
+            setLocalIncomingCall(null);
+            if (onIncomingCall) {
+              onIncomingCall(null);
+            }
+          }}
+        />
+      )}
     </div>
   );
 };

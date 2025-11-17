@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import { Link } from 'react-router-dom';
 
 import { followUser, unfollowUser } from '../../api/UserRequests';
 import { createChat } from '../../api/ChatRequests';
@@ -34,7 +35,10 @@ const UserSuggestion = ({ person }) => {
 
   return (
     <div className="flex items-center justify-between gap-3">
-      <div className="flex items-center gap-3">
+      <Link
+        to={`/profile/${person._id}`}
+        className="flex items-center gap-3 transition-opacity hover:opacity-80"
+      >
         <img
           src={assetUrl(person.profilePicture, 'defaultProfile.png')}
           alt={person.username}
@@ -46,7 +50,7 @@ const UserSuggestion = ({ person }) => {
           </span>
           <span className="text-xs text-[var(--color-text-muted)]">@{person.username}</span>
         </div>
-      </div>
+      </Link>
       <button
         type="button"
         onClick={toggleFollow}

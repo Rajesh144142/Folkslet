@@ -18,8 +18,10 @@ const Message = () => {
   const [isDesktop, setIsDesktop] = useState(false);
   const [showList, setShowList] = useState(true);
   const [typingStatus, setTypingStatus] = useState({});
+  const [incomingCall, setIncomingCall] = useState(null);
   useEffect(() => {
-    const socketInstance = io("http://localhost:8800");
+    const socketUrl = import.meta.env.VITE_SOCKET_URL || "http://localhost:8800";
+    const socketInstance = io(socketUrl);
     socket.current = socketInstance;
     socketInstance.emit("new-user-add", user._id);
     const handleUsers = (users) => setOnlineUsers(users);
@@ -33,13 +35,27 @@ const Message = () => {
         [data.chatId]: data.isTyping ? data.senderId : null,
       }));
     };
+    const handleIncomingCall = async (data) => {
+      try {
+        const { getUser } = await import("../../features/home/api/UserRequests");
+        const response = await getUser(data.senderId);
+        setIncomingCall({
+          ...data,
+          sender: response.data,
+        });
+      } catch (error) {
+        setIncomingCall(data);
+      }
+    };
     socketInstance.on("get-users", handleUsers);
     socketInstance.on("recieve-message", handleMessage);
     socketInstance.on("typing-status", handleTyping);
+    socketInstance.on("incoming-call", handleIncomingCall);
     return () => {
       socketInstance.off("get-users", handleUsers);
       socketInstance.off("recieve-message", handleMessage);
       socketInstance.off("typing-status", handleTyping);
+      socketInstance.off("incoming-call", handleIncomingCall);
       socketInstance.disconnect();
     };
   }, [user]);
@@ -164,6 +180,14 @@ const Message = () => {
                 recieveMessage={recieveMessage}
                 setsendTyping={setsendTyping}
                 typingUserId={currentChat ? typingStatus[currentChat._id] : null}
+                socket={socket.current}
+                onIncomingCall={(call) => {
+                  if (call) {
+                    setIncomingCall(call);
+                  } else {
+                    setIncomingCall(null);
+                  }
+                }}
               />
             </>
           ) : (

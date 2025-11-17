@@ -1,7 +1,6 @@
 const cron = require('node-cron');
 const PostModel = require('../models/postModel');
 const { upsertDefaultTrends, DEFAULT_TOPICS } = require('../controller/TrendController');
-const { generateTrends } = require('../services/trendGenerator');
 
 const pickFallbackTopics = () => {
   const shuffled = [...DEFAULT_TOPICS].sort(() => Math.random() - 0.5);
@@ -12,14 +11,54 @@ const pickFallbackTopics = () => {
   }));
 };
 
-const buildDocuments = (posts) =>
-  posts.map((post) => ({
-    id: post._id?.toString() || post.id || '',
-    text: post.desc || '',
-    likes: Array.isArray(post.likes) ? post.likes.length : 0,
-    shares: Number(post.shareCount) || 0,
-    comments: Array.isArray(post.comments) ? post.comments.map((comment) => comment.message).filter(Boolean) : [],
-  }));
+const deriveTopicsFromPosts = (posts) => {
+  if (!Array.isArray(posts) || posts.length === 0) {
+    return [];
+  }
+
+  const candidates = posts
+    .map((post) => {
+      const text = (post?.desc || '').trim();
+      const likes = Array.isArray(post?.likes) ? post.likes.length : 0;
+      const shares = Number(post?.shareCount) || 0;
+      const comments = Array.isArray(post?.comments) ? post.comments.length : 0;
+      const engagement = likes * 2 + shares * 3 + comments;
+      return {
+        post,
+        text,
+        engagement,
+      };
+    })
+    .filter(({ text }) => text.length > 0);
+
+  if (candidates.length === 0) {
+    return [];
+  }
+
+  const sanitizeTopic = (text) =>
+    text
+      .split(/\s+/)
+      .slice(0, 3)
+      .join(' ')
+      .replace(/[#"'`]/g, '')
+      .trim();
+
+  return candidates
+    .sort((a, b) => b.engagement - a.engagement)
+    .slice(0, 3)
+    .map(({ post, text, engagement }, index) => {
+      const momentum = engagement >= 60 ? 'rising' : engagement <= 15 ? 'cooling' : 'stable';
+      const summary = text.length > 160 ? `${text.slice(0, 157)}...` : text;
+      const topic = sanitizeTopic(text) || `Post Highlight ${index + 1}`;
+      return {
+        topic,
+        summary,
+        postIds: [post?._id?.toString()].filter(Boolean),
+        momentum,
+        score: Number((engagement / 100).toFixed(2)),
+      };
+    });
+};
 
 const runTrendSeed = async () => {
   const now = new Date();
@@ -34,11 +73,9 @@ const runTrendSeed = async () => {
       .limit(Number(process.env.TREND_SAMPLE_LIMIT || 200))
       .lean();
 
-    const documents = buildDocuments(posts);
-
     let topics = null;
-    if (documents.length > 0) {
-      topics = await generateTrends({ documents, windowStart, windowEnd: now });
+    if (posts.length > 0) {
+      topics = deriveTopicsFromPosts(posts);
     }
 
     if (!topics || topics.length === 0) {

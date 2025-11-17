@@ -20,21 +20,27 @@ const InfoCard = () => {
 
   useEffect(() => {
     const fetchProfileUser = async () => {
-      if (profileUserId === user._id) {
-        setProfileUser(user);
+      if (!profileUserId || profileUserId === user?._id) {
+        setProfileUser(user || {});
       } else {
-        const profileDetails = await UserApi.getUser(profileUserId);
-        setProfileUser(profileDetails);
+        try {
+          const profileDetails = await UserApi.getUser(profileUserId);
+          setProfileUser(profileDetails);
+        } catch (error) {
+          setProfileUser({});
+        }
       }
     };
-    fetchProfileUser();
+    if (user) {
+      fetchProfileUser();
+    }
   }, [profileUserId, user]);
 
   return (
     <div className="flex flex-col gap-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-sm">
       <div className="flex items-center justify-between">
         <h4 className="text-lg font-semibold text-[var(--color-text-base)]">Profile Info</h4>
-        {user._id === profileUserId && (
+        {(user?._id === profileUserId || !profileUserId) && (
           <Link
             to="/settings"
             className="rounded-full border border-[var(--color-border)] px-4 py-1 text-sm font-semibold text-[var(--color-text-muted)] transition hover:bg-[var(--color-border)]/40 hover:text-[var(--color-text-base)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
@@ -59,12 +65,14 @@ const InfoCard = () => {
         <AiOutlineHeart className="text-lg text-[var(--color-primary)]" />
         <span className="font-medium text-[var(--color-text-base)]">{profileUser.relationship || 'Not shared'}</span>
       </div>
-      <button
-        className="self-end rounded-full bg-[var(--color-border)] px-4 py-2 text-sm font-semibold text-[var(--color-text-base)] transition hover:bg-[var(--color-primary)] hover:text-[var(--color-on-primary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
-        onClick={handleLogOut}
-      >
-        Logout
-      </button>
+      {(user?._id === profileUserId || !profileUserId) && (
+        <button
+          className="self-end rounded-full bg-[var(--color-border)] px-4 py-2 text-sm font-semibold text-[var(--color-text-base)] transition hover:bg-[var(--color-primary)] hover:text-[var(--color-on-primary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+          onClick={handleLogOut}
+        >
+          Logout
+        </button>
+      )}
     </div>
   );
 };

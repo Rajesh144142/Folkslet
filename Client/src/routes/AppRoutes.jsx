@@ -5,6 +5,8 @@ import NotFound from '../components/common/NotFound.jsx';
 const HomePage = lazy(() => import('../components/home'));
 const AuthPage = lazy(() => import('../components/Auth'));
 const ProfilePage = lazy(() => import('../Home/Profile/profile'));
+const FollowersListPage = lazy(() => import('../Home/Profile/FollowersList'));
+const FollowingListPage = lazy(() => import('../Home/Profile/FollowingList'));
 const MessagePage = lazy(() => import('../Home/Message/Message'));
 const UpcomingPage = lazy(() => import('../Home/NewFeatures/Upcomingfeatures'));
 const SettingsPage = lazy(() => import('../components/Settings/settings.jsx'));
@@ -42,6 +44,8 @@ const AppRoutes = ({ isAuthenticated }) => {
         }
       />
       <Route path="/profile/:id" element={privateRoute(ProfilePage)} />
+      <Route path="/profile/:id/followers" element={privateRoute(FollowersListPage)} />
+      <Route path="/profile/:id/following" element={privateRoute(FollowingListPage)} />
       <Route path="/settings" element={privateRoute(SettingsPage)} />
       <Route path="/notifications" element={privateRoute(NotificationsPage)} />
       <Route path="/chat" element={privateRoute(MessagePage)} />
