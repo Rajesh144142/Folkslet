@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { BiSearch } from "react-icons/bi";
 import {Link}from 'react-router-dom'
 import { BsPencilSquare,BsArrowLeft } from "react-icons/bs";
@@ -19,7 +19,12 @@ const Message = () => {
   const [showList, setShowList] = useState(true);
   const [typingStatus, setTypingStatus] = useState({});
   const [incomingCall, setIncomingCall] = useState(null);
-  const [setsendTyping, setSetsendTyping] = useState(null);
+  
+  const handleSendTyping = useCallback((typingData) => {
+    if (socket.current && typingData) {
+      socket.current.emit('typing', typingData);
+    }
+  }, []);
   useEffect(() => {
     const socketUrl = import.meta.env.VITE_SOCKET_URL || "http://localhost:8800";
     const socketInstance = io(socketUrl);
@@ -168,7 +173,7 @@ const Message = () => {
                 currentUser={user._id}
                 setsendMessage={setsendMessage}
                 recieveMessage={recieveMessage}
-                setsendTyping={setsendTyping}
+                setsendTyping={handleSendTyping}
                 typingUserId={currentChat ? typingStatus[currentChat._id] : null}
                 socket={socket.current}
                 onIncomingCall={(call) => {
