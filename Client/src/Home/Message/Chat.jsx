@@ -1,5 +1,11 @@
+<<<<<<< HEAD
 import React, { useState, useEffect, useRef } from "react";
 import { getUser } from "../api/UserRequests";
+=======
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { Link } from "react-router-dom";
+import { getUser } from "../../features/home/api/UserRequests";
+>>>>>>> c32dbde (feat: Add WebRTC video/audio calling, profile improvements, and update documentation)
 import { PiMessengerLogoLight } from "react-icons/pi";
 import { useDispatch, useSelector } from "react-redux";
 import { BsCameraVideo } from "react-icons/bs";
@@ -8,19 +14,69 @@ import { AiOutlineSend, AiOutlinePlusSquare } from "react-icons/ai";
 import { addMessage, getMessages } from "../api/MessageRequests";
 import { format } from "timeago.js"; // Import the time formatting library
 import InputEmoji from "react-input-emoji";
+<<<<<<< HEAD
 import { Link } from "react-router-dom";
 
 const Chat = ({ chat, currentUser, setsendMessage, recieveMessage }) => {
   // Get user data from Redux store
+=======
+import { assetUrl } from "../../utils/assets";
+import VideoCall from "./VideoCall";
+const Chat = ({ chat, currentUser, setsendMessage, recieveMessage, setsendTyping, typingUserId, socket, onIncomingCall }) => {
+>>>>>>> c32dbde (feat: Add WebRTC video/audio calling, profile improvements, and update documentation)
   const user = useSelector((state) => state.authReducer.authData.user);
 
   // State to hold user data, messages, and new message input
   const [userData, setUserData] = useState(null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
+<<<<<<< HEAD
   const scroll = useRef();
   // Path to the public folder (assuming you're using Vite)
   const publicFolder = import.meta.env.VITE_PUBLIC_FOLDER;
+=======
+  const [activeCall, setActiveCall] = useState(null);
+  const [localIncomingCall, setLocalIncomingCall] = useState(null);
+  const scroll = useRef(null);
+  const typingTimeout = useRef(null);
+
+  useEffect(() => {
+    if (!socket || !chat) return;
+
+    const handleIncomingCall = (data) => {
+      const receiverId = chat?.members?.find((id) => id !== currentUser);
+      if (data && receiverId === data.senderId) {
+        setLocalIncomingCall(data);
+        if (onIncomingCall) {
+          onIncomingCall(data);
+        }
+      }
+    };
+
+    socket.on('incoming-call', handleIncomingCall);
+    return () => {
+      socket.off('incoming-call', handleIncomingCall);
+    };
+  }, [socket, chat, currentUser, onIncomingCall]);
+  const emitTyping = useCallback(
+    (isTyping) => {
+      if (!chat) {
+        return;
+      }
+      const receiverId = chat.members.find((id) => id !== currentUser);
+      if (!receiverId) {
+        return;
+      }
+      setsendTyping({
+        chatId: chat._id,
+        receiverId,
+        senderId: currentUser,
+        isTyping,
+      });
+    },
+    [chat, currentUser, setsendTyping]
+  );
+>>>>>>> c32dbde (feat: Add WebRTC video/audio calling, profile improvements, and update documentation)
   useEffect(() => {
     if (recieveMessage !== null && recieveMessage.chatId === chat._id) {
       setMessages({ ...messages, recieveMessage });
@@ -173,7 +229,61 @@ const Chat = ({ chat, currentUser, setsendMessage, recieveMessage }) => {
               </time>
             )}
           </div>
+<<<<<<< HEAD
         ))}
+=======
+        </div>
+        <div className="hidden items-center gap-4 text-xl text-[var(--color-text-muted)] sm:flex">
+          <button
+            onClick={() => setActiveCall({ type: 'audio', user: userData })}
+            className="transition hover:text-[var(--color-text-base)]"
+            disabled={!userData}
+          >
+            <IoCallOutline />
+          </button>
+          <button
+            onClick={() => setActiveCall({ type: 'video', user: userData })}
+            className="transition hover:text-[var(--color-text-base)]"
+            disabled={!userData}
+          >
+            <BsCameraVideo />
+          </button>
+        </div>
+      </header>
+      <div className="flex-1 overflow-y-auto px-4 py-6">
+        <div className="mx-auto flex max-w-2xl flex-col gap-4">
+          {messages.map((message, index) => {
+            const isOwn = message.senderId === currentUser;
+            return (
+              <div
+                key={message._id || index}
+                className={`flex flex-col ${isOwn ? "items-end" : "items-start"}`}
+                ref={index === messages.length - 1 ? scroll : null}
+              >
+                <span className="mb-1 text-xs font-medium text-[var(--color-text-muted)]">
+                  {isOwn ? `${user.firstname} ${user.lastname}` : fullName || "Unknown user"}
+                </span>
+                {message?.text && (
+                  <span
+                    className={`rounded-2xl border px-4 py-2 text-sm ${
+                      isOwn
+                        ? "border-[var(--color-primary)]/30 bg-[var(--color-primary)] text-[var(--color-on-primary)]"
+                        : "border-[var(--color-border)] bg-[var(--color-border)]/40 text-[var(--color-text-base)]"
+                    }`}
+                  >
+                    {message.text}
+                  </span>
+                )}
+                {message?.createdAt && (
+                  <time className="mt-1 text-[10px] uppercase tracking-wide text-[var(--color-text-muted)]">
+                    {format(message.createdAt)}
+                  </time>
+                )}
+              </div>
+            );
+          })}
+        </div>
+>>>>>>> c32dbde (feat: Add WebRTC video/audio calling, profile improvements, and update documentation)
       </div>
 
       {/* Render new message input */}
@@ -190,6 +300,7 @@ const Chat = ({ chat, currentUser, setsendMessage, recieveMessage }) => {
             <AiOutlineSend />
           </div>
         </div>
+<<<<<<< HEAD
       )}
 
       {/* Render a placeholder when no chat exists */}
@@ -207,6 +318,42 @@ const Chat = ({ chat, currentUser, setsendMessage, recieveMessage }) => {
         </div>
       )}
     </>
+=======
+      </form>
+      {activeCall && (
+        <VideoCall
+          callType={activeCall.type}
+          remoteUser={activeCall.user}
+          onEndCall={() => setActiveCall(null)}
+          socket={socket}
+          isIncoming={false}
+        />
+      )}
+      {localIncomingCall && (
+        <VideoCall
+          callType={localIncomingCall.callType}
+          remoteUser={localIncomingCall.sender || { _id: localIncomingCall.senderId, firstname: localIncomingCall.senderName }}
+          onEndCall={() => {
+            setLocalIncomingCall(null);
+            if (onIncomingCall) {
+              onIncomingCall(null);
+            }
+          }}
+          socket={socket}
+          isIncoming={true}
+          offer={localIncomingCall.offer}
+          onCallAccepted={() => {
+            const senderUser = localIncomingCall.sender || { _id: localIncomingCall.senderId, firstname: localIncomingCall.senderName };
+            setActiveCall({ type: localIncomingCall.callType, user: senderUser });
+            setLocalIncomingCall(null);
+            if (onIncomingCall) {
+              onIncomingCall(null);
+            }
+          }}
+        />
+      )}
+    </div>
+>>>>>>> c32dbde (feat: Add WebRTC video/audio calling, profile improvements, and update documentation)
   );
 };
 

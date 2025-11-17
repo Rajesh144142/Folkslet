@@ -15,6 +15,7 @@ const Message = () => {
   const [currentChat, setcurrentChat] = useState(null);
   const socket = useRef();
   const [onlineUsers, setOnlineUsers] = useState([]);
+<<<<<<< HEAD
   useEffect(() => {
     socket.current = io("http://localhost:8800");
     socket.current.emit("new-user-add", user._id);
@@ -22,6 +23,51 @@ const Message = () => {
       // console.log(users)
       setOnlineUsers(users);
     });
+=======
+  const [isDesktop, setIsDesktop] = useState(false);
+  const [showList, setShowList] = useState(true);
+  const [typingStatus, setTypingStatus] = useState({});
+  const [incomingCall, setIncomingCall] = useState(null);
+  useEffect(() => {
+    const socketUrl = import.meta.env.VITE_SOCKET_URL || "http://localhost:8800";
+    const socketInstance = io(socketUrl);
+    socket.current = socketInstance;
+    socketInstance.emit("new-user-add", user._id);
+    const handleUsers = (users) => setOnlineUsers(users);
+    const handleMessage = (data) => setRecieveMessage(data);
+    const handleTyping = (data) => {
+      if (!data || !data.chatId) {
+        return;
+      }
+      setTypingStatus((prev) => ({
+        ...prev,
+        [data.chatId]: data.isTyping ? data.senderId : null,
+      }));
+    };
+    const handleIncomingCall = async (data) => {
+      try {
+        const { getUser } = await import("../../features/home/api/UserRequests");
+        const response = await getUser(data.senderId);
+        setIncomingCall({
+          ...data,
+          sender: response.data,
+        });
+      } catch (error) {
+        setIncomingCall(data);
+      }
+    };
+    socketInstance.on("get-users", handleUsers);
+    socketInstance.on("recieve-message", handleMessage);
+    socketInstance.on("typing-status", handleTyping);
+    socketInstance.on("incoming-call", handleIncomingCall);
+    return () => {
+      socketInstance.off("get-users", handleUsers);
+      socketInstance.off("recieve-message", handleMessage);
+      socketInstance.off("typing-status", handleTyping);
+      socketInstance.off("incoming-call", handleIncomingCall);
+      socketInstance.disconnect();
+    };
+>>>>>>> c32dbde (feat: Add WebRTC video/audio calling, profile improvements, and update documentation)
   }, [user]);
   useEffect(() => {
     const getChats = async () => {
@@ -99,6 +145,7 @@ const Message = () => {
             ))}
           </div>
         </div>
+<<<<<<< HEAD
       </div>
       <div className="overflow-y-auto h-[calc(100vh-2rem)]">
         <style>
@@ -113,6 +160,51 @@ const Message = () => {
             setsendMessage={setsendMessage}
             recieveMessage={recieveMessage}
           />
+=======
+        <div
+          className={`${
+            showList && !isDesktop ? "hidden" : "flex"
+          } min-h-[60vh] flex-col rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-sm`}
+        >
+          {currentChat ? (
+            <>
+              {!isDesktop && (
+                <div className="flex items-center justify-between border-b border-[var(--color-border)] px-4 py-3">
+                  <button
+                    type="button"
+                    className="text-[var(--color-text-muted)] transition hover:text-[var(--color-text-base)]"
+                    onClick={() => setShowList(true)}
+                  >
+                    <BsArrowLeft className="h-5 w-5" />
+                  </button>
+                  <p className="text-sm font-medium text-[var(--color-text-muted)]">Conversation</p>
+                  <span className="h-5 w-5" />
+                </div>
+              )}
+              <Chat
+                chat={currentChat}
+                currentUser={user._id}
+                setsendMessage={setsendMessage}
+                recieveMessage={recieveMessage}
+                setsendTyping={setsendTyping}
+                typingUserId={currentChat ? typingStatus[currentChat._id] : null}
+                socket={socket.current}
+                onIncomingCall={(call) => {
+                  if (call) {
+                    setIncomingCall(call);
+                  } else {
+                    setIncomingCall(null);
+                  }
+                }}
+              />
+            </>
+          ) : (
+            <div className="flex flex-1 flex-col items-center justify-center gap-2 px-6 text-center text-[var(--color-text-muted)]">
+              <p className="text-2xl font-semibold text-[var(--color-text-base)]">Your Messages</p>
+              <p className="text-sm">Send private messages to friends and followers.</p>
+            </div>
+          )}
+>>>>>>> c32dbde (feat: Add WebRTC video/audio calling, profile improvements, and update documentation)
         </div>
       </div>
 
