@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 //password:  JMKudYXB985bGD3S   ,username:  CredOperation
 //mongodb+srv://CredOperation:JMKudYXB985bGD3S@cluster0.cbn7pii.mongodb.net/?retryWrites=true&w=majority
 //middleware
@@ -13,3 +14,22 @@ module.exports=async()=>{
           console.error('Error connecting to MongoDB:');
         };
 }
+=======
+const mongoose = require('mongoose');
+
+const connectDatabase = async () => {
+  if (!process.env.MONGO_URI) {
+    throw new Error('MONGO_URI is not defined');
+  }
+  try {
+    await mongoose.connect(process.env.MONGO_URI);
+  } catch (error) {
+    console.error('MongoDB connection failed', error);
+    process.exit(1);
+  }
+};
+
+module.exports = {
+  connectDatabase,
+};
+>>>>>>> Stashed changes

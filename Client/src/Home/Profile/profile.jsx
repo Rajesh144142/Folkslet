@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import ProfileLeft from "./ProfileLeft";
@@ -30,5 +31,14 @@ const Profile = () => {
     </>
   );
 };
+=======
+import ProfileSection from './profileSection';
+
+const Profile = () => (
+  <div className="mx-auto w-full max-w-screen-xl px-4 pb-12 lg:px-8">
+    <ProfileSection />
+  </div>
+);
+>>>>>>> Stashed changes
 
 export default Profile;
