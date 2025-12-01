@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 const io = require("socket.io")(8800, {
   cors: {
     origin: "http://localhost:5173",
@@ -34,6 +35,61 @@ io.on("connection", (socket) => {
     // console.log("Data: ", data)
     if (user) {
       io.to(user.socketId).emit("recieve-message", data);
+=======
+require('dotenv').config();
+const { Server } = require('socket.io');
+
+const port = Number(process.env.SOCKET_PORT || 8800);
+const allowedOrigins = (process.env.SOCKET_ALLOWED_ORIGINS || 'http://localhost:5173')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter((origin) => origin.length > 0);
+
+const io = new Server(port, {
+  cors: {
+    origin: allowedOrigins,
+    credentials: true,
+  },
+  transports: ['websocket', 'polling'],
+  pingTimeout: Number(process.env.SOCKET_PING_TIMEOUT || 25000),
+  pingInterval: Number(process.env.SOCKET_PING_INTERVAL || 20000),
+});
+
+const activeUsers = new Map();
+
+const serializeUsers = () =>
+  Array.from(activeUsers.entries()).map(([userId, socketId]) => ({ userId, socketId }));
+
+io.on('connection', (socket) => {
+  socket.on('new-user-add', (userId) => {
+    if (!userId) {
+      return;
+    }
+    activeUsers.set(userId, socket.id);
+    io.emit('get-users', serializeUsers());
+  });
+
+  socket.on('disconnect', () => {
+    for (const [userId, socketId] of activeUsers.entries()) {
+      if (socketId === socket.id) {
+        activeUsers.delete(userId);
+      }
+    }
+    io.emit('get-users', serializeUsers());
+  });
+
+  socket.on('send-message', (payload) => {
+    if (!payload || typeof payload !== 'object') {
+      return;
+    }
+    const { receiverId } = payload;
+    if (!receiverId) {
+      return;
+    }
+    const socketId = activeUsers.get(receiverId);
+    if (socketId) {
+      io.to(socketId).emit('recieve-message', payload);
+>>>>>>> Stashed changes
     }
   });
 
@@ -45,9 +101,15 @@ io.on("connection", (socket) => {
     if (!receiverId || !chatId || !senderId) {
       return;
     }
+<<<<<<< Updated upstream
     const user = activeUsers.find((user) => user.userId === receiverId);
     if (user) {
       io.to(user.socketId).emit('typing-status', {
+=======
+    const socketId = activeUsers.get(receiverId);
+    if (socketId) {
+      io.to(socketId).emit('typing-status', {
+>>>>>>> Stashed changes
         chatId,
         senderId,
         isTyping: Boolean(isTyping),
@@ -63,9 +125,15 @@ io.on("connection", (socket) => {
     if (!receiverId || !offer || !senderId) {
       return;
     }
+<<<<<<< Updated upstream
     const user = activeUsers.find((user) => user.userId === receiverId);
     if (user) {
       io.to(user.socketId).emit('incoming-call', {
+=======
+    const socketId = activeUsers.get(receiverId);
+    if (socketId) {
+      io.to(socketId).emit('incoming-call', {
+>>>>>>> Stashed changes
         senderId,
         senderName,
         offer,
@@ -82,9 +150,15 @@ io.on("connection", (socket) => {
     if (!receiverId || !answer) {
       return;
     }
+<<<<<<< Updated upstream
     const user = activeUsers.find((user) => user.userId === receiverId);
     if (user) {
       io.to(user.socketId).emit('call-accepted', { answer });
+=======
+    const socketId = activeUsers.get(receiverId);
+    if (socketId) {
+      io.to(socketId).emit('call-accepted', { answer });
+>>>>>>> Stashed changes
     }
   });
 
@@ -96,9 +170,15 @@ io.on("connection", (socket) => {
     if (!receiverId) {
       return;
     }
+<<<<<<< Updated upstream
     const user = activeUsers.find((user) => user.userId === receiverId);
     if (user) {
       io.to(user.socketId).emit('call-rejected');
+=======
+    const socketId = activeUsers.get(receiverId);
+    if (socketId) {
+      io.to(socketId).emit('call-rejected');
+>>>>>>> Stashed changes
     }
   });
 
@@ -110,9 +190,15 @@ io.on("connection", (socket) => {
     if (!receiverId) {
       return;
     }
+<<<<<<< Updated upstream
     const user = activeUsers.find((user) => user.userId === receiverId);
     if (user) {
       io.to(user.socketId).emit('call-ended');
+=======
+    const socketId = activeUsers.get(receiverId);
+    if (socketId) {
+      io.to(socketId).emit('call-ended');
+>>>>>>> Stashed changes
     }
   });
 
@@ -124,9 +210,15 @@ io.on("connection", (socket) => {
     if (!receiverId || !candidate) {
       return;
     }
+<<<<<<< Updated upstream
     const user = activeUsers.find((user) => user.userId === receiverId);
     if (user) {
       io.to(user.socketId).emit('ice-candidate', { candidate });
+=======
+    const socketId = activeUsers.get(receiverId);
+    if (socketId) {
+      io.to(socketId).emit('ice-candidate', { candidate });
+>>>>>>> Stashed changes
     }
   });
 
