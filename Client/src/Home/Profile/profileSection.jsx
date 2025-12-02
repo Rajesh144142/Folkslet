@@ -8,6 +8,7 @@ import PostComposer from '../../features/home/components/middle/PostComposer';
 import PostList from '../../features/home/components/middle/PostList';
 import { assetUrl } from '../../utils/assets';
 import * as UserApi from '../../features/home/api/UserRequests';
+import { subscribeToUser, unsubscribeFromUser, addRealtimeListener } from '../../realtime/client';
 
 const ProfileSection = () => {
   const authData = useSelector((state) => state.authReducer.authData);
@@ -24,13 +25,24 @@ const ProfileSection = () => {
         setProfileUser(user);
         return;
       }
-      if (profileUserId === user?._id) {
-        setProfileUser(user);
-      } else {
-        try {
-          const profileDetails = await UserApi.getUser(profileUserId);
-          setProfileUser(profileDetails.data || profileDetails);
-        } catch (error) {
+      // Always fetch fresh data from the server to ensure accurate follower counts
+      try {
+        const profileDetails = await UserApi.getUser(profileUserId);
+        const fetchedUser = profileDetails.data || profileDetails;
+        // Ensure followers and following are arrays
+        if (!Array.isArray(fetchedUser.followers)) {
+          fetchedUser.followers = [];
+        }
+        if (!Array.isArray(fetchedUser.following)) {
+          fetchedUser.following = [];
+        }
+        setProfileUser(fetchedUser);
+      } catch (error) {
+        console.error('Error fetching profile user:', error);
+        // Fallback to Redux state if fetch fails
+        if (profileUserId === user?._id) {
+          setProfileUser(user);
+        } else {
           setProfileUser(null);
         }
       }
@@ -40,13 +52,76 @@ const ProfileSection = () => {
     }
   }, [profileUserId, user]);
 
+  // Update profileUser when viewing own profile and Redux state changes (for real-time updates)
+  useEffect(() => {
+    if ((profileUserId === user?._id || !profileUserId) && user) {
+      // Only update if we have fresh data from Redux (e.g., from real-time updates)
+      // This ensures follower counts stay in sync
+      setProfileUser((prev) => {
+        if (!prev || !user) return prev || user;
+        // Merge Redux state with current profileUser to preserve any additional data
+        return {
+          ...prev,
+          followers: user.followers || prev.followers,
+          following: user.following || prev.following,
+        };
+      });
+    }
+  }, [user?.followers, user?.following, profileUserId]);
+
+  // Subscribe to real-time updates for the profile user
+  useEffect(() => {
+    if (!profileUserId || !user) {
+      return;
+    }
+    
+    // Subscribe to the profile user's updates
+    subscribeToUser(profileUserId);
+    
+    // Listen for follower updates
+    const handleFollowersUpdated = (message) => {
+      if (message?.userId === profileUserId && message?.data?.followers) {
+        const followers = Array.isArray(message.data.followers) ? message.data.followers : [];
+        setProfileUser((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            followers: followers,
+          };
+        });
+      }
+    };
+    
+    // Listen for following updates
+    const handleFollowingUpdated = (message) => {
+      if (message?.userId === profileUserId && message?.data?.following) {
+        setProfileUser((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            following: message.data.following,
+          };
+        });
+      }
+    };
+    
+    const offFollowers = addRealtimeListener('followersUpdated', handleFollowersUpdated);
+    const offFollowing = addRealtimeListener('followingUpdated', handleFollowingUpdated);
+    
+    return () => {
+      unsubscribeFromUser(profileUserId);
+      offFollowers();
+      offFollowing();
+    };
+  }, [profileUserId, user]);
+
   if (!user || !profileUser) {
     return null;
   }
 
   const isOwnProfile = user._id === profileUserId || !profileUserId;
   const totalPosts = posts.reduce((count, post) => (post?.userId === profileUser._id ? count + 1 : count), 0);
-  const fullName = [profileUser.firstname, profileUser.lastname].filter(Boolean).join(' ').trim() || profileUser.username || 'User';
+  const fullName = [profileUser.firstname, profileUser.lastname].filter(Boolean).join(' ').trim() || profileUser.email?.split('@')[0] || 'User';
   const about = profileUser.about?.trim() || 'Write about yourself';
   const followingCount = Array.isArray(profileUser.following) ? profileUser.following.length : 0;
   const followerCount = Array.isArray(profileUser.followers) ? profileUser.followers.length : 0;

@@ -80,7 +80,7 @@ const VideoCall = ({ callType, remoteUser, onEndCall, socket, isIncoming, offer,
         socket.emit('call-user', {
           receiverId: remoteUser._id,
           senderId: user._id,
-          senderName: `${user.firstname} ${user.lastname}`.trim() || user.username,
+          senderName: [user.firstname, user.lastname].filter(Boolean).join(' ') || user.email?.split('@')[0] || 'User',
           offer,
           callType,
         });

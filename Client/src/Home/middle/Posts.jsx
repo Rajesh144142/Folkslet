@@ -1,22 +1,32 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { getTimelinePosts } from '../action/PostAction';
 import Post from './post';
 import { useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-// import ShowComents from "../../components/commentsSection/showComents";
+import useRealtimePosts from '../../features/home/hooks/useRealtimePosts';
 
 const Posts = () => {
   const params = useParams();
-    const dispatch = useDispatch();
+  const dispatch = useDispatch();
   const user = useSelector((state) => state.authReducer.authData.user); 
   const { posts, loading } = useSelector((state) => state.postReducer);
+  
   useEffect(() => {
-    dispatch(getTimelinePosts(user._id)); // Use user._id directly
-  }, []); // Add dispatch and user._id to the dependency array
+    if (user?._id) {
+      dispatch(getTimelinePosts(user._id));
+    }
+  }, [dispatch, user?._id]);
+  
   let filteredPosts = posts;
   if (params.id) {
     filteredPosts = posts.filter((post) => post.userId === params.id);
   }
+  
+  const postIds = useMemo(() => {
+    return filteredPosts.map((post) => post._id || post.id).filter(Boolean);
+  }, [filteredPosts]);
+  
+  useRealtimePosts(postIds);
 
   if (loading) return <div  className='text-center'>Fetching posts....</div>;
 

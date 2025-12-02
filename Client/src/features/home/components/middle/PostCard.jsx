@@ -261,11 +261,11 @@ const PostCard = ({ data }) => {
             <img
               className="h-12 w-12 rounded-full border border-[var(--color-border)] object-cover"
               src={assetUrl(author.profilePicture, 'defaultProfile.png')}
-              alt={`${author.firstname} ${author.lastname}`}
+              alt={[author.firstname, author.lastname].filter(Boolean).join(' ') || author.email?.split('@')[0] || 'User'}
             />
             <div>
               <p className="text-lg font-semibold text-[var(--color-text-base)]">
-                {author.firstname} {author.lastname}
+                {[author.firstname, author.lastname].filter(Boolean).join(' ') || author.email?.split('@')[0] || 'User'}
               </p>
               <span className="text-sm text-[var(--color-text-muted)]">{format(author.createdAt)}</span>
             </div>
@@ -284,7 +284,7 @@ const PostCard = ({ data }) => {
         {isSharedPost && (
           <p className="text-sm text-[var(--color-text-muted)]">
             Shared from{' '}
-            {sharedAuthor ? `${sharedAuthor.firstname} ${sharedAuthor.lastname}` : 'another user'}
+            {sharedAuthor ? [sharedAuthor.firstname, sharedAuthor.lastname].filter(Boolean).join(' ') || sharedAuthor.email?.split('@')[0] || 'User' : 'another user'}
           </p>
         )}
         {data.desc && <p className="text-base text-[var(--color-text-base)]">{data.desc}</p>}
@@ -300,12 +300,12 @@ const PostCard = ({ data }) => {
               <img
                 className="h-10 w-10 rounded-full border border-[var(--color-border)] object-cover"
                 src={assetUrl(sharedAuthor?.profilePicture, 'defaultProfile.png')}
-                alt={sharedAuthor ? `${sharedAuthor.firstname} ${sharedAuthor.lastname}` : 'Shared user'}
+                alt={sharedAuthor ? [sharedAuthor.firstname, sharedAuthor.lastname].filter(Boolean).join(' ') || sharedAuthor.email?.split('@')[0] || 'User' : 'Shared user'}
               />
               <div>
                 <p className="text-sm font-semibold text-[var(--color-text-base)]">
                   {sharedAuthor
-                    ? `${sharedAuthor.firstname} ${sharedAuthor.lastname}`
+                    ? [sharedAuthor.firstname, sharedAuthor.lastname].filter(Boolean).join(' ') || sharedAuthor.email?.split('@')[0] || 'User'
                     : 'Shared user'}
                 </p>
                 {sharedContent?.createdAt && (
@@ -367,7 +367,7 @@ const PostCard = ({ data }) => {
           {likes} {likes === 1 ? 'like' : 'likes'}
         </p>
         <p className="text-xs text-[var(--color-text-muted)]">{shareCount} shares</p>
-        <Comments postId={data._id} userId={user._id} userName={user.username} />
+        <Comments postId={data._id} userId={user._id} />
         <button
           type="button"
           onClick={toggleComments}
@@ -418,8 +418,18 @@ const PostCard = ({ data }) => {
           </Button>
         </DialogActions>
       </Dialog>
-      <Dialog open={editorOpen} onClose={() => (processing ? null : setEditorOpen(false))} fullWidth maxWidth="sm">
-        <DialogTitle>Edit post</DialogTitle>
+      <Dialog 
+        open={editorOpen} 
+        onClose={() => (processing ? null : setEditorOpen(false))} 
+        fullWidth 
+        maxWidth="sm"
+        PaperProps={{
+          className: 'bg-[var(--color-surface)] border border-[var(--color-border)] rounded-3xl'
+        }}
+      >
+        <DialogTitle className="text-xl font-semibold text-[var(--color-text-base)] pb-2">
+          Edit post
+        </DialogTitle>
         <DialogContent className="flex flex-col gap-4 pt-4">
           <TextField
             multiline
@@ -428,43 +438,86 @@ const PostCard = ({ data }) => {
             onChange={(event) => setEditorDesc(event.target.value)}
             placeholder="Update your post"
             fullWidth
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                backgroundColor: 'var(--color-background)',
+                color: 'var(--color-text-base)',
+                '& fieldset': {
+                  borderColor: 'var(--color-border)',
+                },
+                '&:hover fieldset': {
+                  borderColor: 'var(--color-primary)',
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: 'var(--color-primary)',
+                },
+              },
+              '& .MuiInputBase-input::placeholder': {
+                color: 'var(--color-text-muted)',
+                opacity: 1,
+              },
+            }}
           />
           {(previewImage || pendingImage) && (
             <div className="relative overflow-hidden rounded-2xl border border-[var(--color-border)]">
               <img src={previewImage} alt="Selected" className="max-h-[24rem] w-full object-cover" />
-              <Button
+              <button
                 onClick={resetEditorMedia}
-                variant="contained"
-                size="small"
-                className="absolute right-3 top-3 bg-[var(--color-primary)] text-[var(--color-on-primary)] hover:brightness-110"
+                className="absolute right-3 top-3 rounded-lg bg-[var(--color-primary)] px-3 py-1.5 text-sm font-medium text-[var(--color-on-primary)] transition hover:brightness-110"
               >
                 Remove
-              </Button>
+              </button>
             </div>
           )}
-          <Button variant="outlined" component="label">
-            Replace image
+          <label className="cursor-pointer">
+            <span className="inline-block rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-2 text-sm font-medium text-[var(--color-text-base)] transition hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]">
+              Replace image
+            </span>
             <input hidden type="file" accept="image/*" onChange={onImageChange} />
-          </Button>
+          </label>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setEditorOpen(false)} disabled={processing}>
+        <DialogActions className="gap-2 px-6 pb-4">
+          <button
+            onClick={() => setEditorOpen(false)}
+            disabled={processing}
+            className="rounded-lg border border-[var(--color-border)] bg-transparent px-4 py-2 text-sm font-medium text-[var(--color-text-base)] transition hover:bg-[var(--color-background)] disabled:opacity-50"
+          >
             Cancel
-          </Button>
-          <Button onClick={handleUpdate} disabled={processing} variant="contained">
-            {processing ? <CircularProgress size={20} /> : 'Save changes'}
-          </Button>
+          </button>
+          <button
+            onClick={handleUpdate}
+            disabled={processing}
+            className="rounded-lg bg-[var(--color-primary)] px-4 py-2 text-sm font-medium text-[var(--color-on-primary)] transition hover:brightness-110 disabled:opacity-50 flex items-center gap-2"
+          >
+            {processing ? <CircularProgress size={16} className="text-[var(--color-on-primary)]" /> : 'Save changes'}
+          </button>
         </DialogActions>
       </Dialog>
-      <Dialog open={deleteOpen} onClose={() => (processing ? null : setDeleteOpen(false))}>
-        <DialogTitle>Delete this post?</DialogTitle>
-        <DialogActions>
-          <Button onClick={() => setDeleteOpen(false)} disabled={processing}>
+      <Dialog 
+        open={deleteOpen} 
+        onClose={() => (processing ? null : setDeleteOpen(false))}
+        PaperProps={{
+          className: 'bg-[var(--color-surface)] border border-[var(--color-border)] rounded-3xl'
+        }}
+      >
+        <DialogTitle className="text-xl font-semibold text-[var(--color-text-base)] pb-2 text-center">
+          Delete this post?
+        </DialogTitle>
+        <DialogActions className="gap-2 px-6 pb-4 justify-center">
+          <button
+            onClick={() => setDeleteOpen(false)}
+            disabled={processing}
+            className="rounded-lg border border-[var(--color-border)] bg-transparent px-6 py-2 text-sm font-medium text-[var(--color-text-base)] transition hover:bg-[var(--color-background)] disabled:opacity-50"
+          >
             Keep
-          </Button>
-          <Button onClick={handleDelete} color="error" disabled={processing}>
-            {processing ? <CircularProgress size={20} /> : 'Delete'}
-          </Button>
+          </button>
+          <button
+            onClick={handleDelete}
+            disabled={processing}
+            className="rounded-lg bg-red-600 px-6 py-2 text-sm font-medium text-white transition hover:bg-red-700 disabled:opacity-50 flex items-center gap-2"
+          >
+            {processing ? <CircularProgress size={16} className="text-white" /> : 'Delete'}
+          </button>
         </DialogActions>
       </Dialog>
     </div>

@@ -1,13 +1,8 @@
-<<<<<<< Updated upstream
-const MessageModel = require("../models/messageModel");
-=======
 const MessageModel = require("../models/messageModel.js");
 const ChatModel = require("../models/chatModel.js");
 const UserModel = require("../models/usermodel.js");
 const { createNotification } = require("./NotificationController.js");
->>>>>>> Stashed changes
 
-// Add Message
 const addMessage = async (req, res) => {
   const { chatId, senderId, text } = req.body;
   const message = new MessageModel({
@@ -17,19 +12,17 @@ const addMessage = async (req, res) => {
   });
   try {
     const result = await message.save();
-<<<<<<< Updated upstream
-=======
     try {
       const chat = await ChatModel.findById(chatId);
       if (chat?.members) {
         const recipients = chat.members.filter((member) => member !== senderId);
         let actorMeta;
         try {
-          const actor = await UserModel.findById(senderId).select('firstname lastname username profilePicture');
+          const actor = await UserModel.findById(senderId).select('firstname lastname email profilePicture');
           if (actor) {
             actorMeta = {
               id: actor.id.toString(),
-              name: [actor.firstname, actor.lastname].filter(Boolean).join(' ') || actor.username,
+              name: [actor.firstname, actor.lastname].filter(Boolean).join(' ') || actor.email.split('@')[0],
               avatar: actor.profilePicture || '',
             };
           }
@@ -52,14 +45,12 @@ const addMessage = async (req, res) => {
     } catch (notificationError) {
       console.error('Failed to create message notification', notificationError);
     }
->>>>>>> Stashed changes
     res.status(200).json(result);
   } catch (error) {
     res.status(500).json(error);
   }
 };
 
-// Get Messages
 const getMessages = async (req, res) => {
   const { chatId } = req.params;
   try {

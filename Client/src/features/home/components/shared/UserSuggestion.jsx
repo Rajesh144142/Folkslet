@@ -41,14 +41,14 @@ const UserSuggestion = ({ person }) => {
       >
         <img
           src={assetUrl(person.profilePicture, 'defaultProfile.png')}
-          alt={person.username}
+          alt={[person.firstname, person.lastname].filter(Boolean).join(' ') || person.email?.split('@')[0] || 'User'}
           className="h-12 w-12 rounded-full object-cover ring-2 ring-[var(--color-border)]"
         />
         <div className="flex flex-col">
           <span className="text-sm font-semibold text-[var(--color-text-base)]">
-            {person.firstname} {person.lastname}
+            {[person.firstname, person.lastname].filter(Boolean).join(' ') || person.email?.split('@')[0] || 'User'}
           </span>
-          <span className="text-xs text-[var(--color-text-muted)]">@{person.username}</span>
+          <span className="text-xs text-[var(--color-text-muted)]">@{person.email?.split('@')[0] || 'user'}</span>
         </div>
       </Link>
       <button

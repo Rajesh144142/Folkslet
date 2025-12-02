@@ -1,8 +1,5 @@
 @tailwind base;
 @tailwind components;
-<<<<<<< Updated upstream
-@tailwind utilities;
-=======
 @tailwind utilities;
 *{
   margin: 0;
@@ -88,4 +85,3 @@
     display: none;
   }
 }
->>>>>>> Stashed changes

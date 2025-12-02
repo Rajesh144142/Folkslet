@@ -1,19 +1,3 @@
-<<<<<<< Updated upstream
-import React from 'react'
-import { Link } from 'react-router-dom'
-const Settings = () => {
-  return (
-    <>
-<div>
-    settings
-</div>
-
-    </>
-  )
-}
-
-export default Settings
-=======
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { LuMoon, LuSun } from 'react-icons/lu';
@@ -124,7 +108,8 @@ const Settings = () => {
       setIsEditingProfile(false);
       setProfileImage(null);
       setCoverImage(null);
-    } catch {
+    } catch (error) {
+      console.error('Failed to update profile:', error);
       setIsEditingProfile(true);
     } finally {
       setIsSavingProfile(false);
@@ -169,7 +154,7 @@ const Settings = () => {
               <img src={coverSrc} alt="Cover" className="h-full w-full object-cover" loading="lazy" />
               <img
                 src={avatarSrc}
-                alt={user.firstname}
+                alt={[user.firstname, user.lastname].filter(Boolean).join(' ') || user.email?.split('@')[0] || 'User'}
                 className="absolute bottom-0 left-6 h-24 w-24 translate-y-1/2 rounded-full border-4 border-[var(--color-surface)] object-cover shadow-xl"
                 loading="lazy"
               />
@@ -177,7 +162,7 @@ const Settings = () => {
             <div className="mt-16 space-y-4 px-6 pb-6">
               <div>
                 <p className="text-xl font-semibold text-[var(--color-text-base)]">
-                  {[user.firstname, user.lastname].filter(Boolean).join(' ') || user.username}
+                  {[user.firstname, user.lastname].filter(Boolean).join(' ') || user.email?.split('@')[0] || 'User'}
                 </p>
                 <p className="text-sm text-[var(--color-text-muted)]">{user.email}</p>
               </div>
@@ -215,7 +200,6 @@ const Settings = () => {
                 } focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]`}
               >
                 {currentTheme === 'dark' ? <LuMoon /> : <LuSun />}
-                {/* <span>{currentTheme === 'dark' ? 'Dark mode' : 'Light mode'}</span> */}
               </button>
             </div>
           </div>
@@ -383,4 +367,3 @@ const Settings = () => {
 };
 
 export default Settings;
->>>>>>> Stashed changes

@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Link } from "react-router-dom";
 import { getUser } from "../../features/home/api/UserRequests";
 import { PiMessengerLogoLight } from "react-icons/pi";
 import { useSelector } from "react-redux";
 import { BsCameraVideo } from "react-icons/bs";
 import { IoCallOutline } from "react-icons/io5";
-import { AiOutlineSend, AiOutlinePlusSquare } from "react-icons/ai";
+import { AiOutlineSend } from "react-icons/ai";
 import { addMessage, getMessages } from "../../features/home/api/MessageRequests";
 import { format } from "timeago.js";
 import InputEmoji from "react-input-emoji";
@@ -172,7 +171,7 @@ const Chat = ({ chat, currentUser, setsendMessage, recieveMessage, setsendTyping
   const fullName = [userData?.firstname, userData?.lastname].filter(Boolean).join(" ");
 
   return (
-    <div className="flex h-full flex-1 flex-col bg-[var(--color-surface)]">
+    <div className="flex h-full flex-1 flex-col bg-[var(--color-surface)] rounded-3xl">
       <header className="flex items-center justify-between border-b border-[var(--color-border)] px-4 py-4">
         <div className="flex items-center gap-3">
           <img
@@ -223,7 +222,7 @@ const Chat = ({ chat, currentUser, setsendMessage, recieveMessage, setsendTyping
                 ref={index === messages.length - 1 ? scroll : null}
               >
                 <span className="mb-1 text-xs font-medium text-[var(--color-text-muted)]">
-                  {isOwn ? `${user.firstname} ${user.lastname}` : fullName || "Unknown user"}
+                  {isOwn ? ([user.firstname, user.lastname].filter(Boolean).join(' ') || user.email?.split('@')[0] || 'You') : fullName || "Unknown user"}
                 </span>
                 {message?.text && (
                   <span
@@ -251,12 +250,6 @@ const Chat = ({ chat, currentUser, setsendMessage, recieveMessage, setsendTyping
         className="border-t border-[var(--color-border)] px-4 py-3"
       >
         <div className="mx-auto flex max-w-2xl items-center gap-3 rounded-full border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-2">
-          <Link
-            to="/Upcoming"
-            className="text-xl text-[var(--color-text-muted)] transition hover:text-[var(--color-text-base)]"
-          >
-            <AiOutlinePlusSquare />
-          </Link>
           <div className="flex-1">
             <InputEmoji
               value={newMessage}

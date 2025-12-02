@@ -79,6 +79,13 @@ const handleMessage = (socket, raw) => {
   }
   if (parsed.type === 'unsubscribe') {
     const postId = sanitizeId(parsed.postId);
+    if (!postId) {
+      return;
+    }
+    client.posts.delete(postId);
+    send(socket, { type: 'unsubscribed', postId });
+    return;
+  }
   if (parsed.type === 'watchUser') {
     const userId = sanitizeId(parsed.userId);
     if (!userId) {
@@ -95,13 +102,6 @@ const handleMessage = (socket, raw) => {
     }
     client.users.delete(userId);
     send(socket, { type: 'userUnsubscribed', userId });
-    return;
-  }
-    if (!postId) {
-      return;
-    }
-    client.posts.delete(postId);
-    send(socket, { type: 'unsubscribed', postId });
     return;
   }
   if (parsed.type === 'ping') {

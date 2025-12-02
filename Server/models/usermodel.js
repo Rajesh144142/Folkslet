@@ -1,25 +1,25 @@
-// usermodel.js
-
 const mongoose = require('mongoose');
 
 const UserSchema = new mongoose.Schema({
-  username: {
+  email: {
     type: String,
-    required: [true, "Please provide a unique username"],
-    unique: true
+    required: [true, "Email is required"],
+    unique: true,
+    lowercase: true,
+    trim: true
   },
   password: {
     type: String,
     required: [true, "Please provide a password"],
     unique: false
   },
- firstname: {
+  firstname: {
     type: String,
-    required: true
+    required: false
   },
   lastname: {
     type: String,
-    required: true
+    required: false
   },
   isAdmin: {
     type: Boolean,

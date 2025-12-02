@@ -41,8 +41,8 @@ const User = ({ person }) => {
           className="w-[3.5rem] h-[3.5rem] rounded-[50%] p-1"
         />
         <div className="font-bold text-sm flex flex-col ">
-          <span>{person.firstname}</span>
-          <span>{person.username}</span>
+          <span>{person.firstname || person.email?.split('@')[0] || 'User'}</span>
+          <span>{person.email?.split('@')[0] || 'user'}</span>
         </div>
       </div>
       <button

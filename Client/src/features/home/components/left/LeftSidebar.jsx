@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 import { useSelector } from 'react-redux';
 
-import LogoSearch from './LogoSearch';
 import { assetUrl } from '../../../../utils/assets';
 
 const LeftSidebar = () => {
@@ -12,7 +11,7 @@ const LeftSidebar = () => {
       return null;
     }
 
-    const name = [user.firstname, user.lastname].filter(Boolean).join(' ').trim();
+    const name = [user.firstname, user.lastname].filter(Boolean).join(' ').trim() || user.email?.split('@')[0] || 'User';
     const about = user.about?.trim() || 'Write about yourself';
     const cover = assetUrl(user.coverPicture, 'BackgroundProfiledefault.jpg');
     const avatar = assetUrl(user.profilePicture, 'defaultProfile.png');
@@ -29,15 +28,31 @@ const LeftSidebar = () => {
 
   return (
     <aside className="hidden flex-col gap-3 lg:flex">
-      <LogoSearch />
       <div className="flex flex-col overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-sm">
         <div className="relative">
-          <img className="h-40 w-full object-cover" src={profileData.cover} alt="Cover" loading="lazy" />
+          <img 
+            className="h-40 w-full object-cover" 
+            src={profileData.cover} 
+            alt="Cover" 
+            loading="lazy"
+            onError={(e) => {
+              if (!e.target.dataset.fallbackSet) {
+                e.target.dataset.fallbackSet = 'true';
+                e.target.src = assetUrl('BackgroundProfiledefault.jpg');
+              }
+            }}
+          />
           <img
             className="absolute left-1/2 top-24 h-24 w-24 -translate-x-1/2 rounded-full border-4 border-[var(--color-surface)] object-cover shadow-md"
             src={profileData.avatar}
             alt="Avatar"
             loading="lazy"
+            onError={(e) => {
+              if (!e.target.dataset.fallbackSet) {
+                e.target.dataset.fallbackSet = 'true';
+                e.target.src = assetUrl('defaultProfile.png');
+              }
+            }}
           />
         </div>
         <div className="mt-12 flex flex-col items-center gap-2 px-6 pb-6 text-center">

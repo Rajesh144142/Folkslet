@@ -48,7 +48,7 @@ const FollowersList = () => {
   }
 
   const fullName = profileUser
-    ? [profileUser.firstname, profileUser.lastname].filter(Boolean).join(' ').trim() || profileUser.username || 'User'
+    ? [profileUser.firstname, profileUser.lastname].filter(Boolean).join(' ').trim() || profileUser.email?.split('@')[0] || 'User'
     : 'User';
 
   return (

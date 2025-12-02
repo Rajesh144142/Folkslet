@@ -1,28 +1,4 @@
 const express = require('express');
-<<<<<<< Updated upstream
-const router = express.Router();
-const multer = require('multer');
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "public/images");
-  },
-  filename: (req, file, cb) => {
-    cb(null, req.body.name);
-  },
-});
-
-const upload = multer({ storage: storage });
-
-router.post("/", upload.single("file"), (req, res) => {
-  try {
-    return res.status(200).json("File uploaded successfully");
-  } catch (error) {
-    console.error(error);
-  }
-});
-
-=======
 const multer = require('multer');
 const path = require('path');
 const cloudinary = require('../config/cloudinary');
@@ -113,5 +89,4 @@ router.use((error, _req, res, _next) => {
   return res.status(500).json({ success: false, message: 'Upload failed' });
 });
 
->>>>>>> Stashed changes
 module.exports = router;

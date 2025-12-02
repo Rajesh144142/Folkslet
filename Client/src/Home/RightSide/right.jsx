@@ -39,7 +39,7 @@ const Right = () => {
       </div>
      <div className=''><FollowCard/></div>
       <button
-        className="rounded-3xl p-2 w-[70%] ml-auto mr-auto h-[3rem] bg-blue-300 hidden sm:hidden md:block lg:block"
+        className="rounded-3xl p-2 w-[70%] ml-auto mr-auto h-[3rem] bg-[var(--color-primary)] text-[var(--color-on-primary)] hidden sm:hidden md:block lg:block hover:brightness-110 transition"
         onClick={() => setModalOpened(true)}
       >
         Share

@@ -112,7 +112,7 @@ const Navbar = () => {
               <img
                 className="h-10 w-10 rounded-full border border-[var(--color-border)] object-cover"
                 src={assetUrl(user.profilePicture, 'defaultProfile.png')}
-                alt={user.username}
+                alt={[user.firstname, user.lastname].filter(Boolean).join(' ') || user.email?.split('@')[0] || 'User'}
               />
             </Link>
 
@@ -130,7 +130,7 @@ const Navbar = () => {
               <img
                 className="h-10 w-10 rounded-full border border-[var(--color-border)] object-cover"
                 src={assetUrl(user.profilePicture, 'defaultProfile.png')}
-                alt={user.username}
+                alt={[user.firstname, user.lastname].filter(Boolean).join(' ') || user.email?.split('@')[0] || 'User'}
               />
             </Link>
           </div>
@@ -176,7 +176,7 @@ const Navbar = () => {
                   <img
                     className="h-10 w-10 rounded-full border border-[var(--color-border)] object-cover"
                     src={assetUrl(user.profilePicture, 'defaultProfile.png')}
-                    alt={user.username}
+                    alt={[user.firstname, user.lastname].filter(Boolean).join(' ') || user.email?.split('@')[0] || 'User'}
                   />
                 </ListItemIcon>
                 <ListItemText primary="Profile" />

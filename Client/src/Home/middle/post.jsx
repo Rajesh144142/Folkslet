@@ -1,28 +1,41 @@
 import React, { useState, useEffect } from "react";
-import { useSelector } from "react-redux"; // Import useSelector
+import { useSelector } from "react-redux";
 import { PiShareFatBold } from "react-icons/pi";
 import { AiOutlineHeart, AiOutlineMessage, AiFillHeart } from "react-icons/ai";
 import { likePost } from "../api/PostsRequests";
 import { getAllUser } from "../api/UserRequests.jsx";
 import { useLocation } from "react-router-dom";
-import { format } from "timeago.js"; // Import the time formatting library
+import { format } from "timeago.js";
 import { Link } from "react-router-dom";
 import Comments from "../../components/commentsSection/comments";
 import ShowComents from "../../components/commentsSection/showComents";
+import useRealtimePosts from "../../features/home/hooks/useRealtimePosts";
+
 const Post = ({ data }) => {
-  // cosnt[liked,setlike]=useState(true)
-  // Use the useSelector hook to access the user object from the Redux store
   const user = useSelector((state) => state.authReducer.authData.user);
+  const posts = useSelector((state) => state.postReducer.posts);
+  const postId = data?._id || data?.id;
+  
+  useRealtimePosts([postId]);
 
   const location = useLocation();
   const home = location.pathname === "/home";
-  // Ensure that data.likes is always an array
+  
+  const currentPost = posts.find((p) => (p._id === postId || p.id === postId)) || data;
+  const postData = currentPost || data;
+  
   const [allcomment, setallComment] = useState(false);
-  const initialLikes = Array.isArray(data.likes) ? data.likes : [];
+  const initialLikes = Array.isArray(postData.likes) ? postData.likes : [];
   const [liked, setLiked] = useState(initialLikes.includes(user?._id));
   const [likes, setLikes] = useState(initialLikes.length);
+  
+  useEffect(() => {
+    const updatedLikes = Array.isArray(postData.likes) ? postData.likes : [];
+    setLiked(updatedLikes.includes(user?._id));
+    setLikes(updatedLikes.length);
+  }, [postData.likes, user?._id]);
   const handleLike = () => {
-    likePost(data._id, user._id);
+    likePost(postId, user._id);
     setLiked((prev) => !prev);
     liked ? setLikes((prev) => prev - 1) : setLikes((prev) => prev + 1);
   };
@@ -54,14 +67,14 @@ const Post = ({ data }) => {
             home ? "w-[6px]" : "hidden"
           } md:w-[6px] lg:hidden`}
         ></div>
-        {data.image ? (
-          <div className="flex flex-col p-[1rem] shadow-md m-auto w-[97%] bg-white  rounded-3xl gap-[1rem] sm:w-[80%] ">
+        {postData.image ? (
+          <div className="flex flex-col p-[1rem] shadow-md m-auto w-[97%] bg-[var(--color-surface)] rounded-3xl gap-[1rem] sm:w-[80%] border border-[var(--color-border)]">
             {persons.map((person) => {
-              if (person._id === data.userId) {
+              if (person._id === postData.userId) {
                 return (
                   <div className="flex gap-3 items-center" key={person._id}>
                     <img
-                      className="border-2 rounded-[50%] w-[2.5rem] h-[2.5rem]"
+                      className="border-2 border-[var(--color-border)] rounded-[50%] w-[2.5rem] h-[2.5rem] object-cover"
                       src={
                         person.profilePicture
                           ? serverPublic + person.profilePicture
@@ -70,74 +83,73 @@ const Post = ({ data }) => {
                       alt="Profile"
                     />
                     <div>
-                      <h1 className="text-xl">
-                        {person.firstname} {person.lastname}
+                      <h1 className="text-xl text-[var(--color-text-base)]">
+                        {[person.firstname, person.lastname].filter(Boolean).join(' ') || person.email?.split('@')[0] || 'User'}
                       </h1>
-                      <span className="text-sm text-gray-400">
+                      <span className="text-sm text-[var(--color-text-muted)]">
                         {format(person.createdAt)}
                       </span>
                     </div>
                   </div>
                 );
               }
-              return null; // Add this to return null for non-matching persons
+              return null;
             })}
-            <div className={data.desc ? "text-blue" : "hidden"}>
-              {data.desc}
+            <div className={postData.desc ? "text-[var(--color-text-base)]" : "hidden"}>
+              {postData.desc}
             </div>
             <img
               className="w-full max-h-[30rem] object-cover rounded-[0.5rem]"
               src={
-                data.image
-                  ? import.meta.env.VITE_PUBLIC_FOLDER + data.image
+                postData.image
+                  ? import.meta.env.VITE_PUBLIC_FOLDER + postData.image
                   : ""
               }
               alt="error"
             />
-            <div className="flex text-2xl gap-[1.5rem] items-start">
-              <div className="" onClick={handleLike}>
+            <div className="flex text-2xl gap-[1.5rem] items-start text-[var(--color-text-muted)]">
+              <div className="cursor-pointer hover:text-[var(--color-primary)] transition" onClick={handleLike}>
                 {!liked ? (
-                  <div className="">
+                  <div>
                     <AiOutlineHeart />
                   </div>
                 ) : (
-                  <div className="text-red-700 ">
+                  <div className="text-[var(--color-primary)]">
                     <AiFillHeart />
                   </div>
                 )}
               </div>
-              <div className="" onClick={handleComments}>
+              <div className="cursor-pointer hover:text-[var(--color-primary)] transition" onClick={handleComments}>
                 <AiOutlineMessage />
               </div>
-              <div className="">
+              <div className="cursor-pointer hover:text-[var(--color-primary)] transition">
                 <Link to="/Upcoming">
                   <PiShareFatBold />
                 </Link>
               </div>
             </div>
-            <h1>{likes} likes</h1>
+            <h1 className="text-[var(--color-text-base)]">{likes} likes</h1>
             <div className="">
               <Comments
-                postId={data._id}
+                postId={postId}
                 userId={user._id}
-                userName={user.username}
               />
             </div>
-            <h1 className="pl-2 pt-1">Comments:</h1>
+            <h1 className="pl-2 pt-1 text-[var(--color-text-base)]">Comments:</h1>
 
             <div>
-              {allcomment ? <ShowComents postcomment={data.comments} /> : ""}
+              {allcomment ? <ShowComents postcomment={postData.comments || []} /> : ""}
             </div>
           </div>
         ) : (
-          <div className="flex flex-col p-[1rem] shadow-md m-auto w-[97%] bg-white  rounded-3xl gap-[1rem] sm:w-[80%] ">
-            <div className=" flex flex-col justify-start">
+          <div className="flex flex-col p-[1rem] shadow-md m-auto w-[97%] bg-[var(--color-surface)] rounded-3xl gap-[1rem] sm:w-[80%] border border-[var(--color-border)]">
+            <div className="flex flex-col justify-start">
               {persons.map((person) => {
-                if (person._id === data.userId) {
+                if (person._id === postData.userId) {
                   return (
                     <div className="flex gap-3 items-center" key={person._id}>
                       <img
-                        className="border-2 rounded-[50%] w-[2.5rem] h-[2.5rem]"
+                        className="border-2 border-[var(--color-border)] rounded-[50%] w-[2.5rem] h-[2.5rem] object-cover"
                         src={
                           person.profilePicture
                             ? serverPublic + person.profilePicture
@@ -145,51 +157,49 @@ const Post = ({ data }) => {
                         }
                         alt="Profile"
                       />
-
-                      <h1 className="text-xl">
-                        {person.firstname} {person.lastname}
+                      <h1 className="text-xl text-[var(--color-text-base)]">
+                        {[person.firstname, person.lastname].filter(Boolean).join(' ') || person.email?.split('@')[0] || 'User'}
                       </h1>
                     </div>
                   );
                 }
-                return null; // Add this to return null for non-matching persons
+                return null;
               })}
-              <span className=" text-xl p-3">{data.desc}</span>
+              <span className="text-xl p-3 text-[var(--color-text-base)]">{postData.desc}</span>
             </div>
             <div>
-              <div className="flex text-2xl gap-[1.5rem] p-1 items-start">
-                <div className="" onClick={handleLike}>
+              <div className="flex text-2xl gap-[1.5rem] p-1 items-start text-[var(--color-text-muted)]">
+                <div className="cursor-pointer hover:text-[var(--color-primary)] transition" onClick={handleLike}>
                   {!liked ? (
-                    <div className="">
+                    <div>
                       <AiOutlineHeart />
                     </div>
                   ) : (
-                    <div className="text-red-700 ">
+                    <div className="text-[var(--color-primary)]">
                       <AiFillHeart />
                     </div>
                   )}
                 </div>
-                <div className="" onClick={handleComments}>
+                <div className="cursor-pointer hover:text-[var(--color-primary)] transition" onClick={handleComments}>
                   <AiOutlineMessage />
                 </div>
-                <div className="">
+                <div className="cursor-pointer hover:text-[var(--color-primary)] transition">
                   <Link to="/Upcoming">
                     <PiShareFatBold />
                   </Link>
                 </div>
               </div>
-              <h1 className="pl-2">{!likes ? 0 : likes} likes</h1>
+              <h1 className="pl-2 text-[var(--color-text-base)]">{!likes ? 0 : likes} likes</h1>
               <div className="">
                 <Comments
-                  postId={data._id}
+                  postId={postId}
                   userId={user._id}
-                  userName={user.username}
                 />
               </div>
-              <h1 className="pl-2 pt-1">Comments:</h1>
+              <h1 className="pl-2 pt-1 text-[var(--color-text-base)]">Comments:</h1>
 
               <div>
-                {allcomment ? <ShowComents postcomment={data.comments} /> : ""}
+                {allcomment ? <ShowComents postcomment={postData.comments || []} /> : ""}
               </div>
             </div>
           </div>

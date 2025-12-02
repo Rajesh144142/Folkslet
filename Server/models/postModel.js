@@ -1,21 +1,3 @@
-<<<<<<< Updated upstream
-const mongoose = require("mongoose");
-
-const postSchema = mongoose.Schema(
-  {
-    userId: { type: String, required: true },
-    desc: String,
-    likes: [],
-    image: String,
-    comments:[]
-  },
-  {
-    timestamps: true,
-  }
-);
-
-const PostModel = mongoose.model("Posts", postSchema);
-=======
 const mongoose = require('mongoose');
 
 const commentSchema = new mongoose.Schema(
@@ -63,5 +45,4 @@ const postSchema = new mongoose.Schema(
 );
 
 const PostModel = mongoose.model('Posts', postSchema);
->>>>>>> Stashed changes
 module.exports = PostModel;

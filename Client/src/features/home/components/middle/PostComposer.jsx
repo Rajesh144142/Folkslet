@@ -149,12 +149,12 @@ const PostComposer = () => {
         <img
           className="h-14 w-14 rounded-full border border-[var(--color-border)] object-cover"
           src={assetUrl(user.profilePicture, 'defaultProfile.png')}
-          alt={user.username}
+          alt={[user.firstname, user.lastname].filter(Boolean).join(' ') || user.email?.split('@')[0] || 'User'}
           loading="lazy"
         />
         <textarea
           ref={descriptionRef}
-          placeholder={`What's on your mind, ${user.firstname || user.username}?`}
+          placeholder={`What's on your mind, ${user.firstname || user.email?.split('@')[0] || 'User'}?`}
           aria-label="Write a post"
           className="min-h-[96px] w-full resize-none rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-3 text-base text-[var(--color-text-base)] outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
         />

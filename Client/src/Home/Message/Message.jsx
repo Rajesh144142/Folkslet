@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
-import { BiSearch } from "react-icons/bi";
-import {Link}from 'react-router-dom'
-import { BsPencilSquare,BsArrowLeft } from "react-icons/bs";
+import { Link } from 'react-router-dom';
+import { BsPencilSquare, BsArrowLeft } from "react-icons/bs";
+import { HiOutlineChatBubbleLeftEllipsis } from 'react-icons/hi2';
 import { useSelector } from "react-redux";
 import { userChats } from "../api/ChatRequests";
-import Conversation from "./Conversation"; // Import the Conversation component
+import Conversation from "./Conversation";
 import Chat from "./Chat";
 import { io } from "socket.io-client";
 const Message = () => {
@@ -93,65 +93,76 @@ const Message = () => {
     return online ? true : false;
   };
 
+  useEffect(() => {
+    const checkDesktop = () => {
+      setIsDesktop(window.innerWidth >= 1024);
+    };
+    checkDesktop();
+    window.addEventListener('resize', checkDesktop);
+    return () => window.removeEventListener('resize', checkDesktop);
+  }, []);
+
   return (
-    <div className=" grid  grid-cols-[6rem,auto] sm:grid-cols-[4.3rem,7rem,auto] md:grid-cols-[4.4rem,21rem,auto] lg:grid-cols-[4.4rem,23rem,auto]   ">
-      <div className="hidden  sm:block md:block lg:block"></div>
-      <div className="overflow-y-auto h-[calc(100vh-2rem)]">
-        <style>
-          {`
-          /* Remove the scrollbar */
-          ::-webkit-scrollbar {
-            width: 0;
-            height: 0;
-            background-color: transparent;
-          }
-        `}
-        </style>
-        <div className=" flex flex-col  ">
-          {/* <div className=" justify-center m-auto w-[18rem]  bg-white  items-center mt-5 border-[2px] border-black  rounded-md hidden sm:hidden md:flex lg:flex">
-          <input
-            type="text"
-            className="p-2 outline-none bg-white "
-            placeholder="#Explore"
-          />
-          <div className=" text-center  p-2  ">
-            <BiSearch />
+    <div className="mx-auto flex w-full max-w-screen-xl flex-col gap-6 px-4 pb-12 lg:flex-row lg:px-8">
+      <div className="flex w-full flex-col gap-6 lg:max-w-sm">
+        <header className="flex flex-wrap items-center gap-3">
+          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--color-primary)] text-2xl text-[var(--color-on-primary)]">
+            <HiOutlineChatBubbleLeftEllipsis />
+          </span>
+          <div className="mr-auto flex flex-col gap-1">
+            <h1 className="text-3xl font-semibold text-[var(--color-text-base)]">Messages</h1>
+            <p className="text-sm text-[var(--color-text-muted)]">
+              Send private messages to friends and followers.
+            </p>
           </div>
-        </div> */}
-          <div className="m-auto w-[100%] min-h-[350px] mt-7 flex flex-col">
-            <div className="flex justify-center md:justify-between lg:justify-between items-center p-1">
-              <h2 className="text-lg text-black font-bold hidden md:block lg:block   ">
-                Messages
-              </h2>
-              <span className="text-2xl ">
-              <Link to='../home' className="block sm:hidden md:hidden lg:hidden"> <BsArrowLeft/></Link>
-             <Link to='../home' className='hidden sm:hidden md:block lg:block '><BsPencilSquare /></Link> 
-             <span className=" text-sm font-bold md:hidden ">Inbox</span>
-              </span>
+          <Link
+            to="/home"
+            className="hidden rounded-full border border-[var(--color-border)] px-4 py-2 text-sm font-semibold text-[var(--color-text-base)] transition hover:bg-[var(--color-border)]/30 lg:inline-flex items-center gap-2"
+          >
+            <BsPencilSquare />
+            <span>New</span>
+          </Link>
+        </header>
+
+        <div className="flex flex-col gap-4 overflow-y-auto scrollbar-hide" style={{ maxHeight: 'calc(100vh - 12rem)' }}>
+          {chats.length === 0 ? (
+            <div className="rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 text-sm text-[var(--color-text-muted)]">
+              No conversations yet. Start chatting with friends and followers.
             </div>
-            {chats.map((chat, id) => (
-              <div key={id} onClick={() => setcurrentChat(chat)}>
-                {/* Render the Conversation component with chat data */}
-                <Conversation
-                  data={chat}
-                  currentUser={user._id}
-                  online={checkOnlineStatus(chat)}
-                />
-              </div>
-            ))}
-          </div>
+          ) : (
+            chats.map((chat) => {
+              const chatId = chat._id || chat.id;
+              const isSelected = currentChat && (currentChat._id === chatId || currentChat.id === chatId);
+              return (
+                <div
+                  key={chatId}
+                  onClick={() => {
+                    setcurrentChat(chat);
+                    setShowList(false);
+                  }}
+                  className={`cursor-pointer rounded-3xl border p-4 shadow-sm transition hover:shadow-md ${
+                    isSelected
+                      ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/10'
+                      : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:border-[var(--color-primary)]/30'
+                  }`}
+                >
+                  <Conversation
+                    data={chat}
+                    currentUser={user._id}
+                    online={checkOnlineStatus(chat)}
+                  />
+                </div>
+              );
+            })
+          )}
         </div>
       </div>
-      <div className="overflow-y-auto h-[calc(100vh-2rem)]">
-        <style>
-          {`
-       
-        `}
-        </style>
+
+      <div className="flex w-full flex-col lg:flex-[2]">
         <div
           className={`${
             showList && !isDesktop ? "hidden" : "flex"
-          } min-h-[60vh] flex-col rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-sm`}
+          } min-h-[60vh] flex-col rounded-3xl border border-[var(--color-border)] bg-gradient-to-br from-[var(--color-surface)] via-[var(--color-surface-alt)] to-[var(--color-surface)] shadow-xl`}
         >
           {currentChat ? (
             <>
@@ -186,15 +197,20 @@ const Message = () => {
               />
             </>
           ) : (
-            <div className="flex flex-1 flex-col items-center justify-center gap-2 px-6 text-center text-[var(--color-text-muted)]">
-              <p className="text-2xl font-semibold text-[var(--color-text-base)]">Your Messages</p>
-              <p className="text-sm">Send private messages to friends and followers.</p>
+            <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6 py-12 text-center">
+              <div className="flex h-20 w-20 items-center justify-center rounded-full border-4 border-[var(--color-border)] bg-[var(--color-background)]">
+                <HiOutlineChatBubbleLeftEllipsis className="text-4xl text-[var(--color-text-muted)]" />
+              </div>
+              <div className="space-y-2">
+                <p className="text-2xl font-semibold text-[var(--color-text-base)]">Your Messages</p>
+                <p className="text-sm text-[var(--color-text-muted)]">
+                  Select a conversation to start messaging or create a new one.
+                </p>
+              </div>
             </div>
           )}
         </div>
       </div>
-
-      {/* <div className="hidden bg-blue-50 sm:hidden md:hidden lg:block"></div> */}
     </div>
   );
 };

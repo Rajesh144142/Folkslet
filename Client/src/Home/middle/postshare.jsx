@@ -72,11 +72,10 @@ const postShare = ({location}) => {
   return (
     <div className=" flex flex-col sm:flex-row ">
       <div className={`w-[0] m-auto sm:${location==='model'?'hidden':home===true?'hidden':'block w-[6px]'} lg:hidden`}></div>
-      <div className="m-auto border-[1px] shadow-md gap-1rem flex-col p-1 rounded-[1rem] w-[80%] hidden  sm:hidden md:block lg:block ">
-        <div className="flex p-[1rem] justify-center items-center rounded-[1rem]   gap-[1rem] ">
-          {/* <img className='rounded-[50%] w-[3rem] h-[3rem] ' src="https://images.unsplash.com/photo-1503023345310-bd7c1de61c7d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=465&q=80" alt="" /> */}
+      <div className="m-auto border border-[var(--color-border)] shadow-md gap-1rem flex-col p-1 rounded-[1rem] w-[80%] hidden sm:hidden md:block lg:block bg-[var(--color-surface)]">
+        <div className="flex p-[1rem] justify-center items-center rounded-[1rem] gap-[1rem]">
           <img
-            className="border-2 rounded-[50%] w-[4rem] h-[4rem] "
+            className="border-2 border-[var(--color-border)] rounded-[50%] w-[4rem] h-[4rem] object-cover"
             src={
               user.profilePicture
                 ? serverPublic + user.profilePicture
@@ -86,44 +85,41 @@ const postShare = ({location}) => {
           />
           <div className="flex flex-col w-[80%] gap-[1rem]">
             <input
-              className="rounded-[10px] p-[8px] font-[17px]  outline-none"
+              className="rounded-[10px] p-[8px] font-[17px] outline-none border border-[var(--color-border)] bg-[var(--color-background)] text-[var(--color-text-base)] focus:ring-2 focus:ring-[var(--color-primary)]"
               type="text"
-                ref={desc}
+              ref={desc}
               required
             />
           </div>
         </div>
         <div>
           <div className="grid grid-cols-4 justify-items-cente mb-1">
-            <div className=" p-[3px]  text-sm rounded-[10px] flex items-center justify-center hover:cursor-pointer hover:bg-slate-300">
+            <div className="p-[3px] text-sm rounded-[10px] flex items-center justify-center hover:cursor-pointer hover:bg-[var(--color-border)]/30 text-[var(--color-text-muted)] transition">
               <h1 className="text-lg">
                 <GrSchedule />
               </h1>
-              <div className="pl-1"> Schedule</div>
+              <div className="pl-1">Schedule</div>
             </div>
-            <div className="p-[3px]  text-sm rounded-[10px] flex items-center justify-center hover:cursor-pointer hover:bg-slate-300">
-              {" "}
+            <div className="p-[3px] text-sm rounded-[10px] flex items-center justify-center hover:cursor-pointer hover:bg-[var(--color-border)]/30 text-[var(--color-text-muted)] transition">
               <h1 className="text-lg">
                 <MdOutlineLocationOn />
               </h1>
-              <div className="pl-1">Location </div>
+              <div className="pl-1">Location</div>
             </div>
             <div
-              className="p-[3px]  text-sm rounded-[10px] flex items-center justify-center hover:cursor-pointer hover:bg-slate-300"
+              className="p-[3px] text-sm rounded-[10px] flex items-center justify-center hover:cursor-pointer hover:bg-[var(--color-border)]/30 text-[var(--color-text-muted)] transition"
               onClick={() => imageRef.current.click()}
             >
-              {" "}
               <h1 className="text-lg">
-                <HiOutlinePhoto />{" "}
+                <HiOutlinePhoto />
               </h1>
               <div className="pl-1">Post</div>
             </div>
             <button
               onClick={handleUpload}
               disabled={loading}
-              className=" pl-2  pr-2 rounded-xl bg-white text-black text-sm hover:bg-blue-500 hover:text-white"
+              className="pl-2 pr-2 rounded-xl bg-[var(--color-primary)] text-[var(--color-on-primary)] text-sm hover:brightness-110 transition disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {"  "}
               {loading ? "uploading" : "Share"}
             </button>
             <div className="hidden">
@@ -136,16 +132,15 @@ const postShare = ({location}) => {
             </div>
           </div>
           {image && (
-            <div className="relative ">
+            <div className="relative rounded-[0.5rem] border border-[var(--color-border)] overflow-hidden">
               <RxCross2
                 onClick={() => {
                   setImage(null);
                 }}
-                className="absolute right-[1rem] top-[0.5rem] text-xl cursor-pointer"
+                className="absolute right-[1rem] top-[0.5rem] text-xl cursor-pointer bg-[var(--color-surface)] rounded-full p-1 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition"
               />
-              {/* <img className='w-[100%] max-h-[20rem] object-cover rounded-[0.5rem]'src={image.image} alt="" /> */}
               <img
-                className="w-[100%] max-h-[25rem] object-cover rounded-[0.5rem]"
+                className="w-[100%] max-h-[25rem] object-cover"
                 src={URL.createObjectURL(image)}
                 alt="preview"
               />
@@ -154,11 +149,10 @@ const postShare = ({location}) => {
         </div>
       </div>
       <div
-        className="   flex left-0 right-0 top-0 bg-white items-center z-40 fixed border-b-2 sm:hidden md:hidden lg:hidden
-"
+        className="flex left-0 right-0 top-0 bg-[var(--color-surface)] items-center z-40 fixed border-b-2 border-[var(--color-border)] sm:hidden md:hidden lg:hidden"
       >
-        <Link to="" className=" ">
-          <h1 className="mx-3 text-2xl font-bold p-2 text-blue-500">
+        <Link to="" className="">
+          <h1 className="mx-3 text-2xl font-bold p-2 text-[var(--color-primary)]">
             <i>Folkslet</i>
           </h1>
         </Link>
@@ -172,18 +166,17 @@ const postShare = ({location}) => {
           <FaShare />
         </div>
       </div>
-      <div className="mt-6 block sm:hidden md:hidden lg:hidden  ">
+      <div className="mt-6 block sm:hidden md:hidden lg:hidden">
         {image && (
-          <div className="relative ">
+          <div className="relative rounded-[0.5rem] border border-[var(--color-border)] overflow-hidden">
             <RxCross2
               onClick={() => {
                 setImage(null);
               }}
-              className="absolute right-[1rem] top-[0.5rem] text-xl cursor-pointer"
+              className="absolute right-[1rem] top-[0.5rem] text-xl cursor-pointer bg-[var(--color-surface)] rounded-full p-1 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition"
             />
-            {/* <img className='w-[100%] max-h-[20rem] object-cover rounded-[0.5rem]'src={image.image} alt="" /> */}
             <img
-              className="w-[100%] max-h-[25rem] object-cover rounded-[0.5rem]"
+              className="w-[100%] max-h-[25rem] object-cover"
               src={URL.createObjectURL(image)}
               alt="preview"
             />

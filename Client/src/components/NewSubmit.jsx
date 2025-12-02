@@ -9,7 +9,8 @@ const NewSubmit = () => {
     const [password, setPassword] = useState('')
     const handleSubmit = (e) => {
         e.preventDefault();
-    axios.post('http://localhost:5000/users/submit-otp',
+    const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+    axios.post(`${apiUrl}/users/submit-otp`,
         {
             email: localStorage.getItem('email'), // Assuming you store the email in localStorage
             otp: otp,
