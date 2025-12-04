@@ -7,12 +7,13 @@ import { uploadImage } from '../../redux/actions/UploadAction';
 import { updateUser } from '../../redux/actions/UserAction';
 import { toggleTheme } from '../../redux/actions/ThemeActions';
 import { assetUrl } from '../../utils/assets';
+import { getFollowCounts } from '../../features/home/api/UserRequests';
 
 const buildFormState = (data) => ({
-  firstname: data?.firstname || '',
-  lastname: data?.lastname || '',
+  firstname: data?.firstname || data?.firstName || '',
+  lastname: data?.lastname || data?.lastName || '',
   worksAt: data?.worksAt || '',
-  livesin: data?.livesin || '',
+  livesin: data?.livesin || data?.livesIn || '',
   country: data?.country || '',
   relationship: data?.relationship || '',
   about: data?.about || '',
@@ -28,12 +29,54 @@ const Settings = () => {
   const [formData, setFormData] = useState(buildFormState(user));
   const [profileImage, setProfileImage] = useState(null);
   const [coverImage, setCoverImage] = useState(null);
+  const [followCounts, setFollowCounts] = useState({ followers: 0, following: 0 });
 
   useEffect(() => {
     if (user) {
       setFormData(buildFormState(user));
     }
   }, [user]);
+
+  useEffect(() => {
+    const fetchFollowCounts = async () => {
+      if (!user?._id) return;
+      
+      try {
+        const response = await getFollowCounts(user._id);
+        const data = response?.data || response;
+        if (data) {
+          setFollowCounts({
+            followers: data.followersCount || 0,
+            following: data.followingCount || 0,
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching follow counts:', error);
+        // Fallback to Redux state
+        setFollowCounts({
+          followers: Array.isArray(user?.followers) ? user.followers.length : 0,
+          following: Array.isArray(user?.following) ? user.following.length : 0,
+        });
+      }
+    };
+
+    fetchFollowCounts();
+
+    // Listen for follow/unfollow events to refresh counts
+    const handleFollowUpdate = () => {
+      fetchFollowCounts();
+    };
+
+    window.addEventListener('userListRefresh', handleFollowUpdate);
+    window.addEventListener('followersUpdated', handleFollowUpdate);
+    window.addEventListener('followingUpdated', handleFollowUpdate);
+
+    return () => {
+      window.removeEventListener('userListRefresh', handleFollowUpdate);
+      window.removeEventListener('followersUpdated', handleFollowUpdate);
+      window.removeEventListener('followingUpdated', handleFollowUpdate);
+    };
+  }, [user?._id]);
 
   const handleFormChange = (event) => {
     setFormData({ ...formData, [event.target.name]: event.target.value });
@@ -75,7 +118,12 @@ const Settings = () => {
       return;
     }
     setIsSavingProfile(true);
-    const updatedProfile = { ...formData, _id: user._id };
+    const updatedProfile = { 
+      ...formData, 
+      _id: user._id,
+      relationship: formData.relationship || null,
+      country: formData.country || null,
+    };
     try {
       if (profileImage) {
         const form = new FormData();
@@ -122,14 +170,14 @@ const Settings = () => {
 
   const avatarSrc = assetUrl(user.profilePicture, 'defaultProfile.png');
   const coverSrc = assetUrl(user.coverPicture, 'BackgroundProfiledefault.jpg');
-  const followerCount = Array.isArray(user.followers) ? user.followers.length : 0;
-  const followingCount = Array.isArray(user.following) ? user.following.length : 0;
+  const followerCount = followCounts.followers;
+  const followingCount = followCounts.following;
   const lastUpdated = new Date(user.updatedAt || user.createdAt).toLocaleDateString();
   const profileSummary = [
-    { label: 'First name', value: user.firstname },
-    { label: 'Last name', value: user.lastname },
+    { label: 'First name', value: user.firstname || user.firstName },
+    { label: 'Last name', value: user.lastname || user.lastName },
     { label: 'Works at', value: user.worksAt },
-    { label: 'Lives in', value: user.livesin },
+    { label: 'Lives in', value: user.livesin || user.livesIn },
     { label: 'Country', value: user.country },
     { label: 'Relationship', value: user.relationship },
     { label: 'About', value: user.about },
@@ -154,7 +202,7 @@ const Settings = () => {
               <img src={coverSrc} alt="Cover" className="h-full w-full object-cover" loading="lazy" />
               <img
                 src={avatarSrc}
-                alt={[user.firstname, user.lastname].filter(Boolean).join(' ') || user.email?.split('@')[0] || 'User'}
+                alt={[user.firstname || user.firstName, user.lastname || user.lastName].filter(Boolean).join(' ') || user.email?.split('@')[0] || 'User'}
                 className="absolute bottom-0 left-6 h-24 w-24 translate-y-1/2 rounded-full border-4 border-[var(--color-surface)] object-cover shadow-xl"
                 loading="lazy"
               />
@@ -162,7 +210,7 @@ const Settings = () => {
             <div className="mt-16 space-y-4 px-6 pb-6">
               <div>
                 <p className="text-xl font-semibold text-[var(--color-text-base)]">
-                  {[user.firstname, user.lastname].filter(Boolean).join(' ') || user.email?.split('@')[0] || 'User'}
+                  {[user.firstname || user.firstName, user.lastname || user.lastName].filter(Boolean).join(' ') || user.email?.split('@')[0] || 'User'}
                 </p>
                 <p className="text-sm text-[var(--color-text-muted)]">{user.email}</p>
               </div>
@@ -283,23 +331,79 @@ const Settings = () => {
                 </label>
                 <label className="flex flex-col gap-2 text-sm font-semibold text-[var(--color-text-muted)]">
                   Country
-                  <input
-                    type="text"
+                  <select
                     name="country"
-                    value={formData.country}
+                    value={formData.country || ''}
                     onChange={handleFormChange}
                     className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-3 text-[var(--color-text-base)] outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-                  />
+                  >
+                    <option value="">Select country</option>
+                    <option value="United States">United States</option>
+                    <option value="United Kingdom">United Kingdom</option>
+                    <option value="Canada">Canada</option>
+                    <option value="Australia">Australia</option>
+                    <option value="Germany">Germany</option>
+                    <option value="France">France</option>
+                    <option value="Italy">Italy</option>
+                    <option value="Spain">Spain</option>
+                    <option value="Netherlands">Netherlands</option>
+                    <option value="Belgium">Belgium</option>
+                    <option value="Switzerland">Switzerland</option>
+                    <option value="Austria">Austria</option>
+                    <option value="Sweden">Sweden</option>
+                    <option value="Norway">Norway</option>
+                    <option value="Denmark">Denmark</option>
+                    <option value="Finland">Finland</option>
+                    <option value="Poland">Poland</option>
+                    <option value="Portugal">Portugal</option>
+                    <option value="Greece">Greece</option>
+                    <option value="Ireland">Ireland</option>
+                    <option value="India">India</option>
+                    <option value="China">China</option>
+                    <option value="Japan">Japan</option>
+                    <option value="South Korea">South Korea</option>
+                    <option value="Singapore">Singapore</option>
+                    <option value="Malaysia">Malaysia</option>
+                    <option value="Thailand">Thailand</option>
+                    <option value="Indonesia">Indonesia</option>
+                    <option value="Philippines">Philippines</option>
+                    <option value="Vietnam">Vietnam</option>
+                    <option value="Brazil">Brazil</option>
+                    <option value="Mexico">Mexico</option>
+                    <option value="Argentina">Argentina</option>
+                    <option value="Chile">Chile</option>
+                    <option value="Colombia">Colombia</option>
+                    <option value="South Africa">South Africa</option>
+                    <option value="Egypt">Egypt</option>
+                    <option value="Nigeria">Nigeria</option>
+                    <option value="Kenya">Kenya</option>
+                    <option value="New Zealand">New Zealand</option>
+                    <option value="Israel">Israel</option>
+                    <option value="Turkey">Turkey</option>
+                    <option value="Russia">Russia</option>
+                    <option value="Ukraine">Ukraine</option>
+                    <option value="Saudi Arabia">Saudi Arabia</option>
+                    <option value="United Arab Emirates">United Arab Emirates</option>
+                    <option value="Qatar">Qatar</option>
+                    <option value="Kuwait">Kuwait</option>
+                    <option value="Other">Other</option>
+                  </select>
                 </label>
                 <label className="flex flex-col gap-2 text-sm font-semibold text-[var(--color-text-muted)]">
                   Relationship status
-                  <input
-                    type="text"
+                  <select
                     name="relationship"
-                    value={formData.relationship}
+                    value={formData.relationship || ''}
                     onChange={handleFormChange}
                     className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-3 text-[var(--color-text-base)] outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-                  />
+                  >
+                    <option value="">Select relationship status</option>
+                    <option value="Single">Single</option>
+                    <option value="In a relationship">In a relationship</option>
+                    <option value="Married">Married</option>
+                    <option value="Divorced">Divorced</option>
+                    <option value="Widowed">Widowed</option>
+                  </select>
                 </label>
                 <label className="flex flex-col gap-2 text-sm font-semibold text-[var(--color-text-muted)] sm:col-span-2">
                   About

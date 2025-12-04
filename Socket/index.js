@@ -1,157 +1,70 @@
-require('dotenv').config();
 const { Server } = require('socket.io');
+const logger = require('../Server/utils/logger');
+const { SOCKET_EVENTS, SOCKET_EVENT_NAMES, LOG_MESSAGES } = require('./constants');
+const socketConfig = require('./config/socketConfig');
+const { handleNewUserAdd, handleDisconnect } = require('./handlers/userHandlers');
+const { handleSendMessage, handleTyping } = require('./handlers/messageHandlers');
+const {
+  handleCallUser,
+  handleCallAccepted,
+  handleCallRejected,
+  handleCallEnded,
+  handleIceCandidate,
+} = require('./handlers/callHandlers');
 
-const port = Number(process.env.SOCKET_PORT || 8800);
-const allowedOrigins = (process.env.SOCKET_ALLOWED_ORIGINS || 'http://localhost:5173')
-  .split(',')
-  .map((origin) => origin.trim())
-  .filter((origin) => origin.length > 0);
-
-const io = new Server(port, {
-  cors: {
-    origin: allowedOrigins,
-    credentials: true,
-  },
-  transports: ['websocket', 'polling'],
-  pingTimeout: Number(process.env.SOCKET_PING_TIMEOUT || 25000),
-  pingInterval: Number(process.env.SOCKET_PING_INTERVAL || 20000),
-});
+const io = new Server(socketConfig.port, socketConfig);
 
 const activeUsers = new Map();
 
-const serializeUsers = () =>
-  Array.from(activeUsers.entries()).map(([userId, socketId]) => ({ userId, socketId }));
+io.on(SOCKET_EVENT_NAMES.CONNECTION, (socket) => {
+  logger.info(LOG_MESSAGES.CLIENT_CONNECTED, { socketId: socket.id });
 
-io.on('connection', (socket) => {
-  socket.on('new-user-add', (userId) => {
-    if (!userId) {
-      return;
-    }
-    activeUsers.set(userId, socket.id);
-    io.emit('get-users', serializeUsers());
+  socket.on(SOCKET_EVENTS.NEW_USER_ADD, (userId) => {
+    handleNewUserAdd(io, socket, activeUsers, userId);
   });
 
-  socket.on('disconnect', () => {
-    for (const [userId, socketId] of activeUsers.entries()) {
-      if (socketId === socket.id) {
-        activeUsers.delete(userId);
-      }
-    }
-    io.emit('get-users', serializeUsers());
+  socket.on(SOCKET_EVENT_NAMES.DISCONNECT, () => {
+    handleDisconnect(io, socket, activeUsers);
+    logger.info(LOG_MESSAGES.CLIENT_DISCONNECTED, { socketId: socket.id });
   });
 
-  socket.on('send-message', (payload) => {
-    if (!payload || typeof payload !== 'object') {
-      return;
-    }
-    const { receiverId } = payload;
-    if (!receiverId) {
-      return;
-    }
-    const socketId = activeUsers.get(receiverId);
-    if (socketId) {
-      io.to(socketId).emit('recieve-message', payload);
-    }
+  socket.on(SOCKET_EVENTS.SEND_MESSAGE, (payload) => {
+    handleSendMessage(io, activeUsers, payload);
   });
 
-  socket.on('typing', (payload) => {
-    if (!payload || typeof payload !== 'object') {
-      return;
-    }
-    const { receiverId, chatId, senderId, isTyping } = payload;
-    if (!receiverId || !chatId || !senderId) {
-      return;
-    }
-    const socketId = activeUsers.get(receiverId);
-    if (socketId) {
-      io.to(socketId).emit('typing-status', {
-        chatId,
-        senderId,
-        isTyping: Boolean(isTyping),
-      });
-    }
+  socket.on(SOCKET_EVENTS.TYPING, (payload) => {
+    handleTyping(io, activeUsers, payload);
   });
 
-  socket.on('call-user', (payload) => {
-    if (!payload || typeof payload !== 'object') {
-      return;
-    }
-    const { receiverId, offer, senderId, senderName, callType } = payload;
-    if (!receiverId || !offer || !senderId) {
-      return;
-    }
-    const socketId = activeUsers.get(receiverId);
-    if (socketId) {
-      io.to(socketId).emit('incoming-call', {
-        senderId,
-        senderName,
-        offer,
-        callType: callType || 'video',
-      });
-    }
+  socket.on(SOCKET_EVENTS.CALL_USER, (payload) => {
+    handleCallUser(io, activeUsers, payload);
   });
 
-  socket.on('call-accepted', (payload) => {
-    if (!payload || typeof payload !== 'object') {
-      return;
-    }
-    const { receiverId, answer } = payload;
-    if (!receiverId || !answer) {
-      return;
-    }
-    const socketId = activeUsers.get(receiverId);
-    if (socketId) {
-      io.to(socketId).emit('call-accepted', { answer });
-    }
+  socket.on(SOCKET_EVENTS.CALL_ACCEPTED, (payload) => {
+    handleCallAccepted(io, activeUsers, payload);
   });
 
-  socket.on('call-rejected', (payload) => {
-    if (!payload || typeof payload !== 'object') {
-      return;
-    }
-    const { receiverId } = payload;
-    if (!receiverId) {
-      return;
-    }
-    const socketId = activeUsers.get(receiverId);
-    if (socketId) {
-      io.to(socketId).emit('call-rejected');
-    }
+  socket.on(SOCKET_EVENTS.CALL_REJECTED, (payload) => {
+    handleCallRejected(io, activeUsers, payload);
   });
 
-  socket.on('call-ended', (payload) => {
-    if (!payload || typeof payload !== 'object') {
-      return;
-    }
-    const { receiverId } = payload;
-    if (!receiverId) {
-      return;
-    }
-    const socketId = activeUsers.get(receiverId);
-    if (socketId) {
-      io.to(socketId).emit('call-ended');
-    }
+  socket.on(SOCKET_EVENTS.CALL_ENDED, (payload) => {
+    handleCallEnded(io, activeUsers, payload);
   });
 
-  socket.on('ice-candidate', (payload) => {
-    if (!payload || typeof payload !== 'object') {
-      return;
-    }
-    const { receiverId, candidate } = payload;
-    if (!receiverId || !candidate) {
-      return;
-    }
-    const socketId = activeUsers.get(receiverId);
-    if (socketId) {
-      io.to(socketId).emit('ice-candidate', { candidate });
-    }
+  socket.on(SOCKET_EVENTS.ICE_CANDIDATE, (payload) => {
+    handleIceCandidate(io, activeUsers, payload);
   });
 
-  socket.on('error', (error) => {
-    console.error('Socket client error', error);
+  socket.on(SOCKET_EVENT_NAMES.ERROR, (error) => {
+    logger.error(LOG_MESSAGES.CLIENT_ERROR, error);
   });
 });
 
-io.on('error', (error) => {
-  console.error('Socket server error', error);
+io.on(SOCKET_EVENT_NAMES.ERROR, (error) => {
+  logger.error(LOG_MESSAGES.SERVER_ERROR, error);
 });
+
+logger.info(LOG_MESSAGES.SERVER_INITIALIZED, { port: socketConfig.port });
+
+module.exports = io;

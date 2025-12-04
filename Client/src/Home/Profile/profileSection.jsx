@@ -29,12 +29,12 @@ const ProfileSection = () => {
       try {
         const profileDetails = await UserApi.getUser(profileUserId);
         const fetchedUser = profileDetails.data || profileDetails;
-        // Ensure followers and following are arrays
-        if (!Array.isArray(fetchedUser.followers)) {
-          fetchedUser.followers = [];
+        // Use API counts (followersCount/followingCount) if available, fallback to arrays
+        if (fetchedUser.followersCount === undefined && Array.isArray(fetchedUser.followers)) {
+          fetchedUser.followersCount = fetchedUser.followers.length;
         }
-        if (!Array.isArray(fetchedUser.following)) {
-          fetchedUser.following = [];
+        if (fetchedUser.followingCount === undefined && Array.isArray(fetchedUser.following)) {
+          fetchedUser.followingCount = fetchedUser.following.length;
         }
         setProfileUser(fetchedUser);
       } catch (error) {
@@ -79,29 +79,44 @@ const ProfileSection = () => {
     subscribeToUser(profileUserId);
     
     // Listen for follower updates
-    const handleFollowersUpdated = (message) => {
-      if (message?.userId === profileUserId && message?.data?.followers) {
-        const followers = Array.isArray(message.data.followers) ? message.data.followers : [];
-        setProfileUser((prev) => {
-          if (!prev) return prev;
-          return {
-            ...prev,
-            followers: followers,
-          };
-        });
+    const handleFollowersUpdated = async (message) => {
+      if (message?.userId === profileUserId) {
+        // Refresh follow counts from API when followers are updated
+        try {
+          const profileDetails = await UserApi.getUser(profileUserId);
+          const fetchedUser = profileDetails.data || profileDetails;
+          setProfileUser((prev) => {
+            if (!prev) return fetchedUser;
+            return {
+              ...prev,
+              followersCount: fetchedUser.followersCount || prev.followersCount,
+              followingCount: fetchedUser.followingCount || prev.followingCount,
+            };
+          });
+        } catch (error) {
+          console.error('Error refreshing follow counts:', error);
+        }
       }
     };
     
     // Listen for following updates
-    const handleFollowingUpdated = (message) => {
-      if (message?.userId === profileUserId && message?.data?.following) {
-        setProfileUser((prev) => {
-          if (!prev) return prev;
-          return {
-            ...prev,
-            following: message.data.following,
-          };
-        });
+    const handleFollowingUpdated = async (message) => {
+      if (message?.userId === profileUserId) {
+        // Refresh follow counts from API when following is updated
+        try {
+          const profileDetails = await UserApi.getUser(profileUserId);
+          const fetchedUser = profileDetails.data || profileDetails;
+          setProfileUser((prev) => {
+            if (!prev) return fetchedUser;
+            return {
+              ...prev,
+              followersCount: fetchedUser.followersCount || prev.followersCount,
+              followingCount: fetchedUser.followingCount || prev.followingCount,
+            };
+          });
+        } catch (error) {
+          console.error('Error refreshing follow counts:', error);
+        }
       }
     };
     
@@ -121,10 +136,12 @@ const ProfileSection = () => {
 
   const isOwnProfile = user._id === profileUserId || !profileUserId;
   const totalPosts = posts.reduce((count, post) => (post?.userId === profileUser._id ? count + 1 : count), 0);
-  const fullName = [profileUser.firstname, profileUser.lastname].filter(Boolean).join(' ').trim() || profileUser.email?.split('@')[0] || 'User';
+  const firstName = profileUser.firstname || profileUser.firstName;
+  const lastName = profileUser.lastname || profileUser.lastName;
+  const fullName = [firstName, lastName].filter(Boolean).join(' ').trim() || profileUser.email?.split('@')[0] || 'User';
   const about = profileUser.about?.trim() || 'Write about yourself';
-  const followingCount = Array.isArray(profileUser.following) ? profileUser.following.length : 0;
-  const followerCount = Array.isArray(profileUser.followers) ? profileUser.followers.length : 0;
+  const followingCount = profileUser.followingCount || (Array.isArray(profileUser.following) ? profileUser.following.length : 0);
+  const followerCount = profileUser.followersCount || (Array.isArray(profileUser.followers) ? profileUser.followers.length : 0);
   const coverSrc = assetUrl(profileUser.coverPicture, 'BackgroundProfiledefault.jpg');
   const avatarSrc = assetUrl(profileUser.profilePicture, 'defaultProfile.png');
 

@@ -11,17 +11,28 @@ API.interceptors.request.use((req) => {
   return req;
 });
 
-export const getTimelinePosts = (id) => API.get(`/post/${id}/timeline`);
+API.interceptors.response.use(
+  (response) => {
+    if (response.data && response.data.success && response.data.data !== undefined) {
+      response.data = response.data.data;
+    }
+    return response;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+export const getTimelinePosts = (id) => API.get(`/post/timeline/${id}`);
 export const likePost = async (id, userId) => {
   try {
-    const response = await API.put(`/post/${id}/like`, { userId });
-    return response.data; // Return the response data if needed
+    const response = await API.post(`/post/${id}/like`, { userId });
+    return response.data;
   } catch (error) {
     console.error("Error liking post:", error);
-    throw error; // Rethrow the error to handle it in the calling code
+    throw error;
   }
 };
 
-//Comment in the Post
-export const commentInthePost = async (id, data) =>await API.post(`post/${id}`, data);
+export const commentInthePost = async (id, data) => await API.post(`/post/${id}/comments`, data);
     

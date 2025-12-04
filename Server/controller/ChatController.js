@@ -1,72 +1,77 @@
-const ChatModel = require("../models/chatModel");
+const { sendSuccess, sendError } = require('../utils/responseHandler');
+const { handleError } = require('../utils/errorHandler');
+const { HTTP_STATUS } = require('../utils/httpStatus');
+const { VALIDATION_MESSAGES } = require('../validation');
+const chatService = require('../services/chatService');
 
-// Create Chat
 const createChat = async (req, res) => {
-  // Check if a chat with the same members already exists
-  const existingChat = await ChatModel.findOne({
-    members: {
-      $all: [req.body.senderId, req.body.receiverId]
-    }
-  });
-
-  if (existingChat) {
-    console.log("chat is already present");
-    // If the chat already exists, return it instead of creating a new one
-    return res.status(200).json(existingChat);
-  }
-
-  // If the chat doesn't exist, create a new chat
-  const newChat = new ChatModel({
-    members: [req.body.senderId, req.body.receiverId],
-  });
-
   try {
-    const result = await newChat.save();
-    res.status(200).json(result);
+    const { senderId, receiverId } = req.body;
+
+    if (!senderId) {
+      return sendError(res, HTTP_STATUS.BAD_REQUEST, VALIDATION_MESSAGES.required.senderId);
+    }
+
+    if (!receiverId) {
+      return sendError(res, HTTP_STATUS.BAD_REQUEST, VALIDATION_MESSAGES.required.userId);
+    }
+
+    if (senderId === receiverId) {
+      return sendError(res, HTTP_STATUS.BAD_REQUEST, VALIDATION_MESSAGES.validation.chatWithSelf);
+    }
+
+    const existingChat = await chatService.findChatByMembers(senderId, receiverId);
+
+    if (existingChat) {
+      return sendSuccess(res, HTTP_STATUS.OK, existingChat);
+    }
+
+    const newChat = await chatService.createChat([senderId, receiverId]);
+
+    return sendSuccess(res, HTTP_STATUS.CREATED, newChat);
   } catch (error) {
-    res.status(500).json(error);
+    const { status, message } = handleError(error);
+    return sendError(res, status, message, error);
   }
 };
 
-
-// Get User Chats
 const userChats = async (req, res) => {
   try {
-    const chat = await ChatModel.find({
-      members: { $in: [req.params.userId] },
-    });
+    const { userId } = req.params;
 
-    res.status(200).json(chat);
+    if (!userId) {
+      return sendError(res, HTTP_STATUS.BAD_REQUEST, VALIDATION_MESSAGES.required.userId);
+    }
+
+    const chats = await chatService.findChatsByUserId(userId);
+
+    return sendSuccess(res, HTTP_STATUS.OK, chats);
   } catch (error) {
-    res.status(500).json(error);
+    const { status, message } = handleError(error);
+    return sendError(res, status, message, error);
   }
-
 };
 
-// Find Chat
 const findChat = async (req, res) => {
   try {
-    // Add validation to ensure req.params.firstId and req.params.secondId are provided
-    if (!req.params.firstId || !req.params.secondId) {
-      return res.status(400).json({ message: 'Both firstId and secondId are required' });
+    const { firstId, secondId } = req.params;
+
+    if (!firstId || !secondId) {
+      return sendError(res, HTTP_STATUS.BAD_REQUEST, VALIDATION_MESSAGES.validation.invalidPayload);
     }
 
-    const chat = await ChatModel.findOne({
-      members: { $all: [req.params.firstId, req.params.secondId] },
-    });
+    const chat = await chatService.findChatByMembers(firstId, secondId);
 
-    // Check if the chat was found
     if (!chat) {
-      return res.status(404).json({ message: 'Chat not found' });
+      return sendError(res, HTTP_STATUS.NOT_FOUND, VALIDATION_MESSAGES.notFound.chat);
     }
 
-    res.status(200).json(chat);
+    return sendSuccess(res, HTTP_STATUS.OK, chat);
   } catch (error) {
-    console.error(error); // Log the error for debugging purposes
-    res.status(500).json({ message: 'Internal server error' });
+    const { status, message } = handleError(error);
+    return sendError(res, status, message, error);
   }
 };
-
 
 module.exports = {
   createChat,

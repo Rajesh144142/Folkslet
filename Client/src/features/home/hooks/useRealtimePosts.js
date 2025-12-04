@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { subscribeToPost, unsubscribeFromPost, addRealtimeListener } from '../../../realtime/client';
-import { POST_COMMENTED, POST_LIKES_UPDATED, POST_UPDATED, POST_DELETED } from '../../../redux/actionTypes';
+import { POST_COMMENTED, POST_LIKES_UPDATED, POST_UPDATED, POST_DELETED, POST_CREATED } from '../../../redux/actionTypes';
 
 const normalizeIds = (ids) =>
   ids
@@ -57,13 +57,33 @@ const useRealtimePosts = (ids) => {
         dispatch({ type: POST_DELETED, data: { postId } });
       }
     };
+    const handleCreated = (message) => {
+      const record = message?.data;
+      const post = record?.post || message?.post;
+      const postId = record?.postId || message?.postId;
+      if (post && postId) {
+        dispatch({ type: POST_CREATED, data: post });
+      }
+    };
+    const handleUpdated = (message) => {
+      const record = message?.data;
+      const post = record?.post || message?.post;
+      const postId = record?.postId || message?.postId;
+      if (post && postId) {
+        dispatch({ type: POST_UPDATED, data: post });
+      }
+    };
     const offShare = addRealtimeListener('shareCountUpdated', handleShares);
     const offDeleted = addRealtimeListener('postDeleted', handleDeleted);
+    const offCreated = addRealtimeListener('postCreated', handleCreated);
+    const offUpdated = addRealtimeListener('postUpdated', handleUpdated);
     return () => {
       offComment();
       offLikes();
       offShare();
       offDeleted();
+      offCreated();
+      offUpdated();
     };
   }, [dispatch, userReady]);
 };

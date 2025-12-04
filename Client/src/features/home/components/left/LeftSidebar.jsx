@@ -1,29 +1,76 @@
-import { useMemo } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 
 import { assetUrl } from '../../../../utils/assets';
+import ProfileCardSkeleton from '../skeletons/ProfileCardSkeleton';
+import { getFollowCounts } from '../../api/UserRequests';
 
 const LeftSidebar = () => {
   const authState = useSelector((state) => state.authReducer.authData);
   const user = authState?.user;
+  const [followCounts, setFollowCounts] = useState({ followers: 0, following: 0 });
+
+  useEffect(() => {
+    const fetchFollowCounts = async () => {
+      if (!user?._id) return;
+      
+      try {
+        const response = await getFollowCounts(user._id);
+        const data = response?.data || response;
+        if (data) {
+          setFollowCounts({
+            followers: data.followersCount || 0,
+            following: data.followingCount || 0,
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching follow counts:', error);
+        // Fallback to Redux state
+        setFollowCounts({
+          followers: Array.isArray(user?.followers) ? user.followers.length : 0,
+          following: Array.isArray(user?.following) ? user.following.length : 0,
+        });
+      }
+    };
+
+    fetchFollowCounts();
+
+    // Listen for follow/unfollow events to refresh counts
+    const handleFollowUpdate = () => {
+      fetchFollowCounts();
+    };
+
+    window.addEventListener('userListRefresh', handleFollowUpdate);
+    window.addEventListener('followersUpdated', handleFollowUpdate);
+    window.addEventListener('followingUpdated', handleFollowUpdate);
+
+    return () => {
+      window.removeEventListener('userListRefresh', handleFollowUpdate);
+      window.removeEventListener('followersUpdated', handleFollowUpdate);
+      window.removeEventListener('followingUpdated', handleFollowUpdate);
+    };
+  }, [user?._id]);
+
   const profileData = useMemo(() => {
     if (!user) {
       return null;
     }
 
-    const name = [user.firstname, user.lastname].filter(Boolean).join(' ').trim() || user.email?.split('@')[0] || 'User';
+    const name = [user.firstname || user.firstName, user.lastname || user.lastName].filter(Boolean).join(' ').trim() || user.email?.split('@')[0] || 'User';
     const about = user.about?.trim() || 'Write about yourself';
     const cover = assetUrl(user.coverPicture, 'BackgroundProfiledefault.jpg');
     const avatar = assetUrl(user.profilePicture, 'defaultProfile.png');
-    const followers = Array.isArray(user.followers) ? user.followers.length : 0;
-    const following = Array.isArray(user.following) ? user.following.length : 0;
     const profileUrl = user._id ? `/profile/${user._id}` : '/';
 
-    return { name, about, cover, avatar, followers, following, profileUrl };
-  }, [user]);
+    return { name, about, cover, avatar, followers: followCounts.followers, following: followCounts.following, profileUrl };
+  }, [user, followCounts]);
 
   if (!profileData) {
-    return null;
+    return (
+      <aside className="hidden flex-col gap-3 lg:flex">
+        <ProfileCardSkeleton />
+      </aside>
+    );
   }
 
   return (

@@ -8,27 +8,35 @@ const FollowAndUnfollow = () => {
   const [persons, setPersons] = useState([]);
 
   useEffect(() => {
-    const fetchPersons = async () => {
+    const fetchFollowCounts = async () => {
       try {
-        const { data } = await getAllUser();
-        // Filter out the user you are interested in
-        const myPerson = data.find((person) => person._id === user._id);
-        setPersons(myPerson);
+        const { getUser } = await import('../api/UserRequests');
+        const response = await getUser(user._id);
+        const userData = response?.data || response;
+        if (userData) {
+          setPersons({
+            followingCount: userData.followingCount || 0,
+            followersCount: userData.followersCount || 0,
+          });
+        }
       } catch (error) {
-        console.error('Error fetching users:', error);
+        console.error('Error fetching follow counts:', error);
       }
     };
-    fetchPersons();
-  }, []); // Include 'user' in the dependency array to refetch when 'user' changes
+    if (user?._id) {
+      fetchFollowCounts();
+    }
+  }, [user?._id]);
+  
   return (
     <div>
       <div className='p-1 text-[17px] flex flex-col justify-center items-center '>
-        <span className='font-bold'>{persons.following.length}</span>
+        <span className='font-bold'>{persons.followingCount || 0}</span>
         <span>Following</span>
       </div>
       <div className='border-[1.6px] h-8'></div>
       <div className=' p-1 text-[17px] flex flex-col justify-center items-center'>
-        <span className='font-bold'>{persons.followers.length}</span>
+        <span className='font-bold'>{persons.followersCount || 0}</span>
         <span>Followers</span>
       </div>
     </div>

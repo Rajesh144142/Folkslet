@@ -84,7 +84,9 @@ const PostCard = ({ data }) => {
       try {
         const response = await getAllUsers();
         if (isMounted) {
-          setPeople(response.data || []);
+          const responseData = response.data || {};
+          const users = responseData.users || responseData || [];
+          setPeople(Array.isArray(users) ? users : []);
         }
       } catch {
         if (isMounted) {
@@ -261,11 +263,11 @@ const PostCard = ({ data }) => {
             <img
               className="h-12 w-12 rounded-full border border-[var(--color-border)] object-cover"
               src={assetUrl(author.profilePicture, 'defaultProfile.png')}
-              alt={[author.firstname, author.lastname].filter(Boolean).join(' ') || author.email?.split('@')[0] || 'User'}
+              alt={[author.firstname || author.firstName, author.lastname || author.lastName].filter(Boolean).join(' ') || author.email?.split('@')[0] || 'User'}
             />
             <div>
               <p className="text-lg font-semibold text-[var(--color-text-base)]">
-                {[author.firstname, author.lastname].filter(Boolean).join(' ') || author.email?.split('@')[0] || 'User'}
+                {[author.firstname || author.firstName, author.lastname || author.lastName].filter(Boolean).join(' ') || author.email?.split('@')[0] || 'User'}
               </p>
               <span className="text-sm text-[var(--color-text-muted)]">{format(author.createdAt)}</span>
             </div>

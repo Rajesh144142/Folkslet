@@ -27,7 +27,12 @@ const ProfileModal = ({ modalOpened, setModalOpened, data, userId }) => {
   };
   const handleSubmit = async (event) => {
     event.preventDefault();
-    const updatedProfile = { ...formData, _id: targetId };
+    const updatedProfile = { 
+      ...formData, 
+      _id: targetId,
+      relationship: formData.relationship || null,
+      country: formData.country || null,
+    };
     if (profileImage) {
       const form = new FormData();
       const fileName = Date.now() + profileImage.name;
@@ -115,23 +120,79 @@ const ProfileModal = ({ modalOpened, setModalOpened, data, userId }) => {
         </label>
         <label className="flex flex-col gap-2 text-sm font-medium text-[var(--color-text-muted)]">
           Country
-          <input
-            type="text"
+          <select
             name="country"
             className="rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-3 text-center text-[var(--color-text-base)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-            value={formData.country}
+            value={formData.country || ''}
             onChange={handleChange}
-          />
+          >
+            <option value="">Select country</option>
+            <option value="United States">United States</option>
+            <option value="United Kingdom">United Kingdom</option>
+            <option value="Canada">Canada</option>
+            <option value="Australia">Australia</option>
+            <option value="Germany">Germany</option>
+            <option value="France">France</option>
+            <option value="Italy">Italy</option>
+            <option value="Spain">Spain</option>
+            <option value="Netherlands">Netherlands</option>
+            <option value="Belgium">Belgium</option>
+            <option value="Switzerland">Switzerland</option>
+            <option value="Austria">Austria</option>
+            <option value="Sweden">Sweden</option>
+            <option value="Norway">Norway</option>
+            <option value="Denmark">Denmark</option>
+            <option value="Finland">Finland</option>
+            <option value="Poland">Poland</option>
+            <option value="Portugal">Portugal</option>
+            <option value="Greece">Greece</option>
+            <option value="Ireland">Ireland</option>
+            <option value="India">India</option>
+            <option value="China">China</option>
+            <option value="Japan">Japan</option>
+            <option value="South Korea">South Korea</option>
+            <option value="Singapore">Singapore</option>
+            <option value="Malaysia">Malaysia</option>
+            <option value="Thailand">Thailand</option>
+            <option value="Indonesia">Indonesia</option>
+            <option value="Philippines">Philippines</option>
+            <option value="Vietnam">Vietnam</option>
+            <option value="Brazil">Brazil</option>
+            <option value="Mexico">Mexico</option>
+            <option value="Argentina">Argentina</option>
+            <option value="Chile">Chile</option>
+            <option value="Colombia">Colombia</option>
+            <option value="South Africa">South Africa</option>
+            <option value="Egypt">Egypt</option>
+            <option value="Nigeria">Nigeria</option>
+            <option value="Kenya">Kenya</option>
+            <option value="New Zealand">New Zealand</option>
+            <option value="Israel">Israel</option>
+            <option value="Turkey">Turkey</option>
+            <option value="Russia">Russia</option>
+            <option value="Ukraine">Ukraine</option>
+            <option value="Saudi Arabia">Saudi Arabia</option>
+            <option value="United Arab Emirates">United Arab Emirates</option>
+            <option value="Qatar">Qatar</option>
+            <option value="Kuwait">Kuwait</option>
+            <option value="Other">Other</option>
+          </select>
         </label>
         <label className="flex flex-col gap-2 text-sm font-medium text-[var(--color-text-muted)]">
           Relationship status
-          <input
-            type="text"
+          <select
             name="relationship"
             className="rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-3 text-center text-[var(--color-text-base)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-            value={formData.relationship}
+            value={formData.relationship || ''}
             onChange={handleChange}
-          />
+          >
+            <option value="">Select relationship status</option>
+            <option value="Single">Single</option>
+            <option value="In a relationship">In a relationship</option>
+            <option value="Married">Married</option>
+            <option value="Divorced">Divorced</option>
+            <option value="Widowed">Widowed</option>
+          </select>
         </label>
         <label className="flex flex-col gap-2 text-sm font-medium text-[var(--color-text-muted)]">
           About

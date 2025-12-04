@@ -14,15 +14,23 @@ API.interceptors.request.use((req) => {
   return req;
 });
 
-// Define a function to upload an image
+API.interceptors.response.use(
+  (response) => {
+    if (response.data && response.data.success && response.data.data !== undefined) {
+      response.data = response.data.data;
+    }
+    return response;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
 export const uploadImage = (data) => {
-  console.log("uploadImage data:", data); // Log the data before making the request
   return API.post("/upload", data);
 };
 
-// Define a function to upload a post
 export const uploadPost = (data) => {
-  console.log("uploadPost data:", data); // Log the data before making the request
   return API.post("/post", data);
 };
 

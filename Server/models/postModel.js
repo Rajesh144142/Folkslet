@@ -1,48 +1,101 @@
 const mongoose = require('mongoose');
-
-const commentSchema = new mongoose.Schema(
-  {
-    userId: { type: String, required: true },
-    username: { type: String, default: '' },
-    message: { type: String, required: true },
-    createdAt: { type: Date, default: Date.now },
-  },
-  { _id: true }
-);
+const { VALIDATION_MESSAGES } = require('../validation');
 
 const sharedPostSchema = new mongoose.Schema(
   {
-    postId: { type: String, required: true },
-    userId: { type: String, required: true },
-    desc: { type: String },
-    image: { type: String },
-    createdAt: { type: Date },
+    postId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Posts',
+      required: true,
+    },
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
+    desc: {
+      type: String,
+      trim: true,
+      maxlength: [2000, VALIDATION_MESSAGES.maxlength.description],
+    },
+    image: {
+      type: String,
+    },
+    createdAt: {
+      type: Date,
+    },
     location: {
-      lat: { type: Number },
-      lng: { type: Number },
-      address: { type: String },
+      lat: {
+        type: Number,
+        min: [-90, VALIDATION_MESSAGES.range.latitude],
+        max: [90, VALIDATION_MESSAGES.range.latitude],
+      },
+      lng: {
+        type: Number,
+        min: [-180, VALIDATION_MESSAGES.range.longitude],
+        max: [180, VALIDATION_MESSAGES.range.longitude],
+      },
+      address: {
+        type: String,
+        trim: true,
+        maxlength: [200, VALIDATION_MESSAGES.maxlength.address],
+      },
     },
   },
-  { _id: false },
+  { _id: false }
 );
 
 const postSchema = new mongoose.Schema(
   {
-    userId: { type: String, required: true },
-    desc: { type: String },
-    likes: { type: [String], default: [] },
-    image: { type: String },
-    comments: { type: [commentSchema], default: [] },
-    location: {
-      lat: { type: Number },
-      lng: { type: Number },
-      address: { type: String },
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+      index: true,
     },
-    sharedPost: { type: sharedPostSchema, default: null },
-    shareCount: { type: Number, default: 0 },
+    desc: {
+      type: String,
+      trim: true,
+      maxlength: [2000, VALIDATION_MESSAGES.maxlength.description],
+    },
+    image: {
+      type: String,
+    },
+    location: {
+      lat: {
+        type: Number,
+        min: [-90, VALIDATION_MESSAGES.range.latitude],
+        max: [90, VALIDATION_MESSAGES.range.latitude],
+      },
+      lng: {
+        type: Number,
+        min: [-180, VALIDATION_MESSAGES.range.longitude],
+        max: [180, VALIDATION_MESSAGES.range.longitude],
+      },
+      address: {
+        type: String,
+        trim: true,
+        maxlength: [200, VALIDATION_MESSAGES.maxlength.address],
+      },
+    },
+    sharedPost: {
+      type: sharedPostSchema,
+      default: null,
+    },
+    shareCount: {
+      type: Number,
+      default: 0,
+      min: [0, VALIDATION_MESSAGES.min.shareCount],
+    },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+  }
 );
 
+postSchema.index({ userId: 1, createdAt: -1 });
+postSchema.index({ createdAt: -1 });
+
 const PostModel = mongoose.model('Posts', postSchema);
+
 module.exports = PostModel;

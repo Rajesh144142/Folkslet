@@ -1,23 +1,17 @@
-const NotificationModel = require('../models/notificationModel');
+const { sendSuccess, sendError } = require('../utils/responseHandler');
+const { handleError } = require('../utils/errorHandler');
+const { HTTP_STATUS } = require('../utils/httpStatus');
+const { VALIDATION_MESSAGES } = require('../validation');
+const { MAX_NOTIFICATION_LIMIT } = require('../config/constants');
 const { emitUserEvent } = require('../socket');
-
-const MAX_LIMIT = 50;
-
-const sanitizeNotification = (doc) => {
-  if (!doc) {
-    return null;
-  }
-  const json = doc.toObject({ getters: true, virtuals: false });
-  json.id = json._id.toString();
-  delete json.__v;
-  return json;
-};
+const notificationService = require('../services/notificationService');
 
 const createNotification = async ({ userId, type, actorId, postId, chatId, messageId, meta }) => {
   if (!userId || !type || !actorId) {
     return null;
   }
-  const notification = await NotificationModel.create({
+
+  const notificationData = {
     userId: userId.toString(),
     type,
     actorId: actorId.toString(),
@@ -25,8 +19,10 @@ const createNotification = async ({ userId, type, actorId, postId, chatId, messa
     chatId: chatId ? chatId.toString() : undefined,
     messageId: messageId ? messageId.toString() : undefined,
     meta: meta || {},
-  });
-  const payload = sanitizeNotification(notification);
+  };
+
+  const notification = await notificationService.createNotification(notificationData);
+  const payload = notificationService.sanitizeNotification(notification);
   emitUserEvent(userId, 'notificationCreated', { notification: payload });
   return payload;
 };
@@ -34,45 +30,57 @@ const createNotification = async ({ userId, type, actorId, postId, chatId, messa
 const getNotifications = async (req, res) => {
   try {
     const { userId } = req.params;
+
     if (!userId) {
-      return res.status(400).json({ message: 'User id required' });
+      return sendError(res, HTTP_STATUS.BAD_REQUEST, VALIDATION_MESSAGES.required.userId);
     }
-    const limit = Math.min(Number.parseInt(req.query.limit, 10) || MAX_LIMIT, MAX_LIMIT);
-    const notifications = await NotificationModel.find({ userId: userId.toString() })
-      .sort({ createdAt: -1 })
-      .limit(limit);
-    res.status(200).json({ items: notifications.map(sanitizeNotification) });
+
+    const limit = req.query.limit ;
+    const notifications = await notificationService.findNotificationsByUserId(userId.toString(), limit);
+    const sanitizedNotifications = notifications.map(notificationService.sanitizeNotification);
+
+    return sendSuccess(res, HTTP_STATUS.OK, { items: sanitizedNotifications });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    const { status, message } = handleError(error);
+    return sendError(res, status, message, error);
   }
 };
 
 const markNotificationRead = async (req, res) => {
   try {
     const { id } = req.params;
+
     if (!id) {
-      return res.status(400).json({ message: 'Notification id required' });
+      return sendError(res, HTTP_STATUS.BAD_REQUEST, VALIDATION_MESSAGES.required.postId);
     }
-    const updated = await NotificationModel.findByIdAndUpdate(id, { read: true }, { new: true });
+
+    const updated = await notificationService.updateNotificationReadStatus(id, true);
+
     if (!updated) {
-      return res.status(404).json({ message: 'Notification not found' });
+      return sendError(res, HTTP_STATUS.NOT_FOUND, VALIDATION_MESSAGES.notFound.notification);
     }
-    res.status(200).json(sanitizeNotification(updated));
+
+    return sendSuccess(res, HTTP_STATUS.OK, notificationService.sanitizeNotification(updated));
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    const { status, message } = handleError(error);
+    return sendError(res, status, message, error);
   }
 };
 
 const markAllRead = async (req, res) => {
   try {
     const { userId } = req.params;
+
     if (!userId) {
-      return res.status(400).json({ message: 'User id required' });
+      return sendError(res, HTTP_STATUS.BAD_REQUEST, VALIDATION_MESSAGES.required.userId);
     }
-    await NotificationModel.updateMany({ userId: userId.toString(), read: false }, { read: true });
-    res.status(200).json({ success: true });
+
+    await notificationService.markAllNotificationsRead(userId.toString());
+
+    return sendSuccess(res, HTTP_STATUS.OK, { success: true });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    const { status, message } = handleError(error);
+    return sendError(res, status, message, error);
   }
 };
 

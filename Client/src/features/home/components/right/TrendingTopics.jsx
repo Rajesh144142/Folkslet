@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 
 import { getLatestTrends } from '../../api/TrendRequests';
 import { trendingTopics as fallbackTopics } from '../../data/trendingTopics';
+import TrendingTopicsSkeleton from '../skeletons/TrendingTopicsSkeleton';
 
 const normalize = (topics) => {
   if (!Array.isArray(topics) || topics.length === 0) {
@@ -47,13 +48,16 @@ const TrendingTopics = ({ className = '' }) => {
     };
   }, []);
 
+  if (loading) {
+    return <TrendingTopicsSkeleton className={className} />;
+  }
+
   return (
     <div
       className={`flex flex-col gap-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 text-[var(--color-text-base)] shadow-sm ${className}`}
     >
       <div className="flex items-center justify-between">
         <h2 className="text-base font-semibold text-[var(--color-text-base)]">Trends for you</h2>
-        {loading && <span className="text-xs text-[var(--color-text-muted)]">Loading…</span>}
       </div>
       <div className="flex flex-col gap-4">
         {topics.map((topic) => (

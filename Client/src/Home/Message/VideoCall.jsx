@@ -80,7 +80,7 @@ const VideoCall = ({ callType, remoteUser, onEndCall, socket, isIncoming, offer,
         socket.emit('call-user', {
           receiverId: remoteUser._id,
           senderId: user._id,
-          senderName: [user.firstname, user.lastname].filter(Boolean).join(' ') || user.email?.split('@')[0] || 'User',
+          senderName: [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email?.split('@')[0] || 'User',
           offer,
           callType,
         });
@@ -244,7 +244,7 @@ const VideoCall = ({ callType, remoteUser, onEndCall, socket, isIncoming, offer,
     }
   };
 
-  const fullName = [remoteUser?.firstname, remoteUser?.lastname].filter(Boolean).join(' ').trim() || remoteUser?.username || 'User';
+  const fullName = [remoteUser?.firstName, remoteUser?.lastName].filter(Boolean).join(' ').trim() || remoteUser?.email?.split('@')[0] || 'User';
 
   if (isIncoming && callStatus === 'ringing') {
     return (

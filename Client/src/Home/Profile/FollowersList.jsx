@@ -25,8 +25,10 @@ const FollowersList = () => {
         
         if (userData.followers && userData.followers.length > 0) {
           const allUsersResponse = await UserApi.getAllUsers();
-          const allUsers = allUsersResponse.data || [];
-          const followersList = allUsers.filter((u) => userData.followers.includes(u._id));
+          const responseData = allUsersResponse.data || {};
+          const allUsers = responseData.users || responseData || [];
+          const usersArray = Array.isArray(allUsers) ? allUsers : [];
+          const followersList = usersArray.filter((u) => userData.followers.includes(u._id));
           setFollowers(followersList);
         } else {
           setFollowers([]);

@@ -1,14 +1,14 @@
 const cron = require('node-cron');
+const logger = require('../utils/logger');
 const NotificationModel = require('../models/notificationModel');
 const { createNotification } = require('../controller/NotificationController');
-
-const SUMMARY_TYPES = ['follow', 'like', 'share', 'message'];
+const { DIGEST_SUMMARY_TYPES, DIGEST_NOTIFICATION_TYPE, ONE_DAY_IN_MS } = require('../config/constants');
 
 const buildCounts = (records) => {
   return records.reduce(
     (acc, record) => {
       const type = record.type;
-      if (!SUMMARY_TYPES.includes(type)) {
+      if (!DIGEST_SUMMARY_TYPES.includes(type)) {
         return acc;
       }
       acc[type] = (acc[type] || 0) + 1;
@@ -20,10 +20,10 @@ const buildCounts = (records) => {
 
 const runDailyDigest = async () => {
   const now = new Date();
-  const since = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  const since = new Date(now.getTime() - ONE_DAY_IN_MS);
   try {
     const notifications = await NotificationModel.find({
-      type: { $in: SUMMARY_TYPES },
+      type: { $in: DIGEST_SUMMARY_TYPES },
       createdAt: { $gte: since, $lt: now },
       digested: { $ne: true },
     }).lean();
@@ -52,7 +52,7 @@ const runDailyDigest = async () => {
         }
         await createNotification({
           userId,
-          type: 'digest',
+          type: DIGEST_NOTIFICATION_TYPE,
           actorId: userId,
           meta: {
             counts,
@@ -65,21 +65,23 @@ const runDailyDigest = async () => {
 
     if (processedIds.length > 0) {
       await NotificationModel.updateMany({ _id: { $in: processedIds } }, { $set: { digested: true } });
+      logger.debug('Daily digest job completed successfully', { processedCount: processedIds.length });
     }
   } catch (error) {
-    console.error('Daily digest job failed', error);
+    logger.error('Daily digest job failed', error);
   }
 };
 
 const scheduleDailyDigest = () => {
   if (process.env.DISABLE_DIGEST_JOB === 'true') {
+    logger.info('Daily digest job is disabled');
     return;
   }
-  const expression = process.env.DIGEST_CRON ;
-//   const expression = process.env.DIGEST_CRON || '30 5 * * *';
+  const expression = process.env.DIGEST_CRON || '30 5 * * *';
   cron.schedule(expression, runDailyDigest, {
     timezone: process.env.TZ || 'UTC',
   });
+  logger.info('Daily digest job scheduled', { expression });
 };
 
 module.exports = { scheduleDailyDigest, runDailyDigest };

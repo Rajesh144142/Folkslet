@@ -34,6 +34,15 @@ const Post = ({ data }) => {
     setLiked(updatedLikes.includes(user?._id));
     setLikes(updatedLikes.length);
   }, [postData.likes, user?._id]);
+
+  useEffect(() => {
+    const updatedPost = posts.find((p) => (p._id === postId || p.id === postId));
+    if (updatedPost) {
+      const updatedLikes = Array.isArray(updatedPost.likes) ? updatedPost.likes : [];
+      setLiked(updatedLikes.includes(user?._id));
+      setLikes(updatedLikes.length);
+    }
+  }, [posts, postId, user?._id]);
   const handleLike = () => {
     likePost(postId, user._id);
     setLiked((prev) => !prev);
@@ -46,14 +55,16 @@ const Post = ({ data }) => {
   useEffect(() => {
     const fetchPersons = async () => {
       try {
-        const { data } = await getAllUser();
+        const { data } = await getAllUser(user?._id);
         setPersons(data);
       } catch (error) {
         console.error("Error fetching users:", error);
       }
     };
-    fetchPersons();
-  }, []);
+    if (user?._id) {
+      fetchPersons();
+    }
+  }, [user?._id]);
 
   const handleComments = () => {
     setallComment(!allcomment);
@@ -84,7 +95,7 @@ const Post = ({ data }) => {
                     />
                     <div>
                       <h1 className="text-xl text-[var(--color-text-base)]">
-                        {[person.firstname, person.lastname].filter(Boolean).join(' ') || person.email?.split('@')[0] || 'User'}
+                        {[person.firstname || person.firstName, person.lastname || person.lastName].filter(Boolean).join(' ') || person.email?.split('@')[0] || 'User'}
                       </h1>
                       <span className="text-sm text-[var(--color-text-muted)]">
                         {format(person.createdAt)}
@@ -158,7 +169,7 @@ const Post = ({ data }) => {
                         alt="Profile"
                       />
                       <h1 className="text-xl text-[var(--color-text-base)]">
-                        {[person.firstname, person.lastname].filter(Boolean).join(' ') || person.email?.split('@')[0] || 'User'}
+                        {[person.firstname || person.firstName, person.lastname || person.lastName].filter(Boolean).join(' ') || person.email?.split('@')[0] || 'User'}
                       </h1>
                     </div>
                   );

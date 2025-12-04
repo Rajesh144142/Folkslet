@@ -9,10 +9,8 @@ const RightSidebar = ({ className = '' }) => {
 
   return (
     <aside className={`flex w-full flex-col gap-6 lg:max-w-sm ${className}`}>
-      <div className="sticky top-28 flex flex-col gap-6">
-        <FollowSuggestions />
-        <TrendingTopics />
-      </div>
+      <FollowSuggestions />
+      <TrendingTopics />
     </aside>
   );
 };

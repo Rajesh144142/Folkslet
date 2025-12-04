@@ -1,80 +1,91 @@
-const UserModel = require('../models/usermodel');
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-
-const JWT_SECRET = process.env.JWTKEY;
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '1h';
-
-if (!JWT_SECRET) {
-  throw new Error('JWTKEY environment variable is required');
-}
+const { sendSuccess, sendError } = require('../utils/responseHandler');
+const { handleError } = require('../utils/errorHandler');
+const { HTTP_STATUS } = require('../utils/httpStatus');
+const { VALIDATION_MESSAGES } = require('../validation');
+const { hashPassword, comparePassword } = require('../utils/passwordUtils');
+const { generateToken } = require('../utils/jwtUtils');
+const {
+  checkEmailExists,
+  createUser,
+  findUserByEmail,
+} = require('../services/authService');
 
 const signup = async (req, res) => {
-  const { email } = req.body;
-  const salt = await bcrypt.genSalt(10);
-  const hashedPass = await bcrypt.hash(req.body.password, salt);
-  req.body.password = hashedPass;
-
   try {
+    const { email, password } = req.body;
+
     if (!email) {
-      return res.status(400).json({ message: 'Email is required' });
+      return sendError(res, HTTP_STATUS.BAD_REQUEST, VALIDATION_MESSAGES.required.email);
     }
 
-    const normalizedEmail = email.toLowerCase();
-    const existingEmail = await UserModel.findOne({ email: normalizedEmail });
-    if (existingEmail) {
-      return res.status(400).json({ message: 'Email already exists' });
+    if (!password) {
+      return sendError(res, HTTP_STATUS.BAD_REQUEST, VALIDATION_MESSAGES.required.password);
     }
 
-    const newUser = new UserModel({
+    const { exists } = await checkEmailExists(email);
+
+    if (exists) {
+      return sendError(res, HTTP_STATUS.CONFLICT, VALIDATION_MESSAGES.conflict.emailExists);
+    }
+
+    const hashedPassword = await hashPassword(password);
+    const userData = {
       ...req.body,
-      email: normalizedEmail,
-      profilePicture: req.body.profilePicture || 'defaultProfile.png',
-      coverPicture: req.body.coverPicture || 'BackgroundProfiledefault.jpg',
-    });
+      password: hashedPassword,
+      profilePicture: req.body.profilePicture || null,
+      coverPicture: req.body.coverPicture || null,
+    };
 
-    const user = await newUser.save();
-    const token = jwt.sign(
-      { email: user.email, id: user._id },
-      JWT_SECRET,
-      { expiresIn: JWT_EXPIRES_IN }
-    );
-    res.status(200).json({ user, token });
+    const user = await createUser(userData);
+    const token = generateToken({ email: user.email, id: user._id });
+
+    return sendSuccess(res, HTTP_STATUS.CREATED, {
+      user,
+      token,
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    const { status, message } = handleError(error);
+    return sendError(res, status, message, error);
   }
 };
 
 const signin = async (req, res) => {
-  const { email, password } = req.body;
-
   try {
+    const { email, password } = req.body;
+
     if (!email) {
-      return res.status(400).json({ message: 'Email is required' });
+      return sendError(res, HTTP_STATUS.BAD_REQUEST, VALIDATION_MESSAGES.required.email);
     }
 
-    const normalizedEmail = email.toLowerCase();
-    const user = await UserModel.findOne({ email: normalizedEmail });
-
-    if (user) {
-      const validity = await bcrypt.compare(password, user.password);
-
-      if (!validity) {
-        return res.status(400).json({ message: 'Wrong password' });
-      } else {
-        const token = jwt.sign(
-          { email: user.email, id: user._id },
-          JWT_SECRET,
-          { expiresIn: JWT_EXPIRES_IN }
-        );
-        res.status(200).json({ user, token });
-      }
-    } else {
-      return res.status(404).json({ message: 'User not found' });
+    if (!password) {
+      return sendError(res, HTTP_STATUS.BAD_REQUEST, VALIDATION_MESSAGES.required.password);
     }
-  } catch (err) {
-    res.status(500).json({ message: 'Something went wrong' });
+
+    const user = await findUserByEmail(email);
+
+    if (!user) {
+      return sendError(res, HTTP_STATUS.NOT_FOUND, VALIDATION_MESSAGES.notFound.user);
+    }
+
+    const isPasswordValid = await comparePassword(password, user.password);
+
+    if (!isPasswordValid) {
+      return sendError(res, HTTP_STATUS.BAD_REQUEST, VALIDATION_MESSAGES.auth.invalidCredentials);
+    }
+
+    const token = generateToken({ email: user.email, id: user._id });
+
+    return sendSuccess(res, HTTP_STATUS.OK, {
+      user,
+      token,
+    });
+  } catch (error) {
+    const { status, message } = handleError(error);
+    return sendError(res, status, message, error);
   }
 };
 
-module.exports = { signup, signin };
+module.exports = {
+  signup,
+  signin,
+};

@@ -21,11 +21,16 @@ httpClient.interceptors.request.use((config) => {
 });
 
 httpClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    if (response.data && response.data.success && response.data.data !== undefined) {
+      response.data = response.data.data;
+    }
+    return response;
+  },
   (error) => {
     const message =
-      error?.response?.data?.message ||
       error?.response?.data?.error ||
+      error?.response?.data?.message ||
       error?.message ||
       'Something went wrong';
     const normalizedError = new Error(message);

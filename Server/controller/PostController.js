@@ -1,213 +1,276 @@
-const PostModel = require('../models/postModel.js');
-const mongoose = require('mongoose');
-const UserModel = require('../models/usermodel.js');
-const { emitPostEvent } = require('../socket.js');
-const { createNotification } = require('./NotificationController.js');
+const { sendSuccess, sendError } = require('../utils/responseHandler');
+const { handleError } = require('../utils/errorHandler');
+const { HTTP_STATUS } = require('../utils/httpStatus');
+const { VALIDATION_MESSAGES } = require('../validation');
+const { emitPostEvent } = require('../socket');
+const { createNotification } = require('./NotificationController');
+const postService = require('../services/postService');
 
 const createPost = async (req, res) => {
   try {
     const { sharedPostId, userId, desc, image, location } = req.body || {};
 
     if (!userId) {
-      return res.status(400).json({ message: 'Missing userId' });
+      return sendError(res, HTTP_STATUS.BAD_REQUEST, VALIDATION_MESSAGES.required.userId);
     }
 
     const payload = {
       userId,
-      desc,
-      image,
-      location,
+      desc: desc || null,
+      image: image || null,
+      location: location || null,
     };
 
-    let original;
+    let originalPost = null;
 
     if (sharedPostId) {
-      original = await PostModel.findById(sharedPostId);
-      if (!original) {
-        return res.status(404).json({ message: 'Original post not found' });
+      originalPost = await postService.findPostById(sharedPostId);
+      if (!originalPost) {
+        return sendError(res, HTTP_STATUS.NOT_FOUND, VALIDATION_MESSAGES.notFound.post);
       }
+
       payload.sharedPost = {
-        postId: original.id,
-        userId: original.userId,
-        desc: original.desc,
-        image: original.image,
-        createdAt: original.createdAt,
-        location: original.location || null,
+        postId: originalPost._id,
+        userId: originalPost.userId,
+        desc: originalPost.desc || null,
+        image: originalPost.image || null,
+        createdAt: originalPost.createdAt,
+        location: originalPost.location || null,
       };
     }
 
-    const post = await new PostModel(payload).save();
+    const post = await postService.createPost(payload);
 
-    if (original) {
-      original.shareCount = (original.shareCount || 0) + 1;
-      await original.save();
-      if (original.userId !== userId) {
+    emitPostEvent(post._id.toString(), 'postCreated', {
+      postId: post._id.toString(),
+      post: post,
+    });
+
+    if (originalPost) {
+      await postService.incrementShareCount(originalPost._id);
+      const updatedOriginal = await postService.findPostById(originalPost._id);
+
+      if (updatedOriginal.userId.toString() !== userId.toString()) {
         let actorMeta;
         try {
-          const actor = await UserModel.findById(userId).select('firstname lastname email profilePicture');
+          const actor = await postService.findUserById(userId, 'firstName lastName email profilePicture');
           if (actor) {
             actorMeta = {
-              id: actor.id.toString(),
-              name: [actor.firstname, actor.lastname].filter(Boolean).join(' ') || actor.email.split('@')[0],
+              id: actor._id.toString(),
+              name: [actor.firstName, actor.lastName].filter(Boolean).join(' ') || actor.email.split('@')[0],
               avatar: actor.profilePicture || '',
             };
           }
         } catch {
           actorMeta = undefined;
         }
+
         await createNotification({
-          userId: original.userId,
+          userId: updatedOriginal.userId,
           type: 'share',
           actorId: userId,
-          postId: original.id,
+          postId: updatedOriginal._id,
           meta: {
             actor: actorMeta,
             post: {
-              id: original.id,
-              desc: original.desc || '',
-              image: original.image || '',
+              id: updatedOriginal._id.toString(),
+              desc: updatedOriginal.desc || '',
+              image: updatedOriginal.image || '',
             },
-            sharedPostId,
+            sharedPostId: sharedPostId.toString(),
             comment: payload.desc || '',
           },
         });
       }
-      emitPostEvent(original.id, 'shareCountUpdated', {
-        postId: original.id,
-        shareCount: original.shareCount,
+
+      emitPostEvent(originalPost._id.toString(), 'shareCountUpdated', {
+        postId: originalPost._id.toString(),
+        shareCount: updatedOriginal.shareCount,
       });
     }
 
-    res.status(201).json(post);
+    return sendSuccess(res, HTTP_STATUS.CREATED, post);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    const { status, message } = handleError(error);
+    return sendError(res, status, message, error);
   }
 };
 
 const getPost = async (req, res) => {
   try {
-    const post = await PostModel.findById(req.params.id);
+    const post = await postService.findPostById(req.params.id);
     if (!post) {
-      return res.status(404).json({ message: 'Post not found' });
+      return sendError(res, HTTP_STATUS.NOT_FOUND, VALIDATION_MESSAGES.notFound.post);
     }
-    res.status(200).json(post);
+    return sendSuccess(res, HTTP_STATUS.OK, post);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    const { status, message } = handleError(error);
+    return sendError(res, status, message, error);
   }
 };
 
 const updatePost = async (req, res) => {
   try {
-    const post = await PostModel.findById(req.params.id);
+    const post = await postService.findPostById(req.params.id);
     if (!post) {
-      return res.status(404).json({ message: 'Post not found' });
+      return sendError(res, HTTP_STATUS.NOT_FOUND, VALIDATION_MESSAGES.notFound.post);
     }
-    if (post.userId !== req.body.userId) {
-      return res.status(403).json({ message: 'Action forbidden' });
+
+    if (post.userId.toString() !== req.body.userId?.toString()) {
+      return sendError(res, HTTP_STATUS.FORBIDDEN, VALIDATION_MESSAGES.validation.postOwnership);
     }
-    Object.assign(post, req.body);
-    const updated = await post.save();
-    res.status(200).json(updated);
+
+    const updated = await postService.updatePost(req.params.id, req.body);
+    
+    emitPostEvent(req.params.id, 'postUpdated', {
+      postId: req.params.id,
+      post: updated,
+    });
+    
+    return sendSuccess(res, HTTP_STATUS.OK, updated);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    const { status, message } = handleError(error);
+    return sendError(res, status, message, error);
   }
 };
 
 const comments = async (req, res) => {
   try {
     const { userId, message } = req.body;
+    const postId = req.params.id;
+
+    if (!userId) {
+      return sendError(res, HTTP_STATUS.BAD_REQUEST, VALIDATION_MESSAGES.required.userId);
+    }
+
     const sanitizedMessage = typeof message === 'string' ? message.trim() : '';
-    if (!userId || sanitizedMessage.length === 0) {
-      return res.status(400).json({ message: 'Invalid payload' });
+    if (sanitizedMessage.length === 0) {
+      return sendError(res, HTTP_STATUS.BAD_REQUEST, VALIDATION_MESSAGES.required.comment);
     }
-    const post = await PostModel.findById(req.params.id);
+
+    const post = await postService.findPostById(postId);
     if (!post) {
-      return res.status(404).json({ message: 'Post not found' });
+      return sendError(res, HTTP_STATUS.NOT_FOUND, VALIDATION_MESSAGES.notFound.post);
     }
-    const user = await UserModel.findById(userId).select('firstname lastname email');
-    const displayName = user 
-      ? [user.firstname, user.lastname].filter(Boolean).join(' ') || user.email.split('@')[0]
+
+    const user = await postService.findUserById(userId, 'firstName lastName email');
+    const displayName = user
+      ? [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email.split('@')[0]
       : 'Anonymous';
-    post.comments.push({
+
+    const comment = await postService.createComment({
+      postId,
       userId,
-      username: displayName,
-      message: sanitizedMessage,
+      text: sanitizedMessage,
     });
-    await post.save();
-    const comment = post.comments[post.comments.length - 1];
-    const payload = { postId: post.id, comment };
-    emitPostEvent(post.id, 'commentCreated', payload);
-    res.status(201).json(payload);
+
+    const payload = {
+      postId: post._id.toString(),
+      comment: {
+        _id: comment._id,
+        userId: comment.userId,
+        username: displayName,
+        text: comment.text,
+        createdAt: comment.createdAt,
+      },
+    };
+
+    emitPostEvent(post._id.toString(), 'commentCreated', payload);
+    return sendSuccess(res, HTTP_STATUS.CREATED, payload);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    const { status, message } = handleError(error);
+    return sendError(res, status, message, error);
   }
 };
 
 const deletePost = async (req, res) => {
   try {
-    const post = await PostModel.findById(req.params.id);
+    const post = await postService.findPostById(req.params.id);
     if (!post) {
-      return res.status(404).json({ message: 'Post not found' });
+      return sendError(res, HTTP_STATUS.NOT_FOUND, VALIDATION_MESSAGES.notFound.post);
     }
-    if (post.userId !== req.body.userId) {
-      return res.status(403).json({ message: 'Action forbidden' });
+
+    if (post.userId.toString() !== req.body.userId?.toString()) {
+      return sendError(res, HTTP_STATUS.FORBIDDEN, VALIDATION_MESSAGES.validation.postOwnership);
     }
-    const postId = post.id;
-    await post.deleteOne();
+
+    const postId = post._id.toString();
+    await postService.deletePost(req.params.id);
     emitPostEvent(postId, 'postDeleted', { postId });
-    res.status(200).json({ message: 'Post deleted' });
+    return sendSuccess(res, HTTP_STATUS.OK, { message: 'Post deleted successfully' });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    const { status, message } = handleError(error);
+    return sendError(res, status, message, error);
   }
 };
 
 const likePost = async (req, res) => {
   try {
     const { userId } = req.body;
+    const postId = req.params.id;
+
     if (!userId) {
-      return res.status(400).json({ message: 'Invalid payload' });
+      return sendError(res, HTTP_STATUS.BAD_REQUEST, VALIDATION_MESSAGES.required.userId);
     }
-    const post = await PostModel.findById(req.params.id);
+
+    const post = await postService.findPostById(postId);
     if (!post) {
-      return res.status(404).json({ message: 'Post not found' });
+      return sendError(res, HTTP_STATUS.NOT_FOUND, VALIDATION_MESSAGES.notFound.post);
     }
-    const hasLiked = post.likes.includes(userId);
+
+    const existingLike = await postService.findLike(postId, userId);
+    const hasLiked = !!existingLike;
+
     if (hasLiked) {
-      post.likes = post.likes.filter((like) => like !== userId);
+      await postService.deleteLike(postId, userId);
     } else {
-      post.likes.push(userId);
+      await postService.createLike(postId, userId);
     }
-    await post.save();
-    const payload = { postId: post.id, likes: post.likes, liked: !hasLiked };
-    emitPostEvent(post.id, 'likesUpdated', payload);
-    if (!hasLiked && post.userId !== userId) {
+
+    const likes = await postService.getPostLikes(postId);
+    const payload = {
+      postId: post._id.toString(),
+      likes: likes.map((id) => id.toString()),
+      liked: !hasLiked,
+    };
+
+    emitPostEvent(post._id.toString(), 'likesUpdated', payload);
+
+    if (!hasLiked && post.userId.toString() !== userId.toString()) {
       let actorMeta;
       try {
-        const actor = await UserModel.findById(userId).select('firstname lastname username profilePicture');
+        const actor = await postService.findUserById(userId, 'firstName lastName email profilePicture');
         if (actor) {
           actorMeta = {
-            id: actor.id.toString(),
-            name: [actor.firstname, actor.lastname].filter(Boolean).join(' ') || actor.username,
+            id: actor._id.toString(),
+            name: [actor.firstName, actor.lastName].filter(Boolean).join(' ') || actor.email.split('@')[0],
             avatar: actor.profilePicture || '',
           };
         }
       } catch {
         actorMeta = undefined;
       }
+
       await createNotification({
         userId: post.userId,
         type: 'like',
         actorId: userId,
-        postId: post.id,
+        postId: post._id,
         meta: {
           actor: actorMeta,
-          post: { id: post.id, desc: post.desc || '', image: post.image || '' },
+          post: {
+            id: post._id.toString(),
+            desc: post.desc || '',
+            image: post.image || '',
+          },
         },
       });
     }
-    res.status(200).json(payload);
+
+    return sendSuccess(res, HTTP_STATUS.OK, payload);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    const { status, message } = handleError(error);
+    return sendError(res, status, message, error);
   }
 };
 
@@ -219,71 +282,25 @@ const parseLimit = (value, fallback) => {
   return Math.min(limit, 50);
 };
 
-const buildCursorQuery = (cursor) => {
-  if (!cursor) {
-    return {};
-  }
-  const date = new Date(cursor);
-  if (Number.isNaN(date.getTime())) {
-    return {};
-  }
-  return { createdAt: { $lt: date } };
-};
-
 const getTimelinePosts = async (req, res) => {
   try {
     const userId = req.params.id;
     const limit = parseLimit(req.query.limit, 20);
-    const cursorQuery = buildCursorQuery(req.query.cursor);
-    const baseMatch = { ...cursorQuery };
 
-    const currentUserPosts = await PostModel.find({ userId, ...baseMatch })
-      .sort({ createdAt: -1 })
-      .limit(limit + 1);
+    const currentUserPosts = await postService.getUserPosts(userId, {}, limit);
+    const followingIds = await postService.getUserFollowingIds(userId);
+    const followingPosts = await postService.getFollowingPosts(followingIds, {}, limit);
 
-    const followingAggregation = await UserModel.aggregate([
-      {
-        $match: {
-          _id: new mongoose.Types.ObjectId(userId),
-        },
-      },
-      {
-        $lookup: {
-          from: 'posts',
-          let: { followingIds: '$following' },
-          pipeline: [
-            { $match: { $expr: { $in: ['$userId', '$$followingIds'] }, ...baseMatch } },
-            { $sort: { createdAt: -1 } },
-            { $limit: limit + 1 },
-          ],
-          as: 'followingPosts',
-        },
-      },
-      {
-        $project: {
-          followingPosts: 1,
-          _id: 0,
-        },
-      },
-    ]);
-
-    const followingPosts = followingAggregation[0]?.followingPosts || [];
     const allPosts = [...currentUserPosts, ...followingPosts]
-      .sort((a, b) => b.createdAt - a.createdAt)
-      .slice(0, limit + 1);
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .slice(0, limit);
 
-    const hasMore = allPosts.length > limit;
-    const items = hasMore ? allPosts.slice(0, limit) : allPosts;
-    const nextCursor =
-      hasMore && items.length > 0 ? items[items.length - 1].createdAt.toISOString() : undefined;
-
-    res.status(200).json({
-      items,
-      nextCursor,
-      hasMore,
+    return sendSuccess(res, HTTP_STATUS.OK, {
+      items: allPosts,
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    const { status, message } = handleError(error);
+    return sendError(res, status, message, error);
   }
 };
 

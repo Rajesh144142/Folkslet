@@ -14,6 +14,16 @@ const normalizeBase = (value) => {
 
 const isAbsoluteUrl = (value) => /^([a-z][a-z\d+\-.]*:)?\/\//i.test(value);
 
+const DEFAULT_IMAGES = ['defaultProfile.png', 'BackgroundProfiledefault.jpg'];
+
+const isDefaultImage = (filename) => {
+  if (!filename || typeof filename !== 'string') {
+    return false;
+  }
+  const normalized = filename.toLowerCase().trim();
+  return DEFAULT_IMAGES.some((defaultImg) => normalized.includes(defaultImg.toLowerCase()));
+};
+
 const resolveBase = () => {
   const envValue = normalizeBase(import.meta.env.VITE_PUBLIC_FOLDER);
   if (envValue) {
@@ -42,10 +52,17 @@ export const assetUrl = (path, fallback) => {
   if (!target) {
     return '';
   }
+  
   if (isAbsoluteUrl(target)) {
     return target;
   }
+  
   const sanitized = target.replace(/^['"]|['"]$/g, '').replace(/^\/+/, '');
+  
+  if (isDefaultImage(sanitized)) {
+    return `/images/${sanitized}`;
+  }
+  
   return joinUrl(baseUrl, sanitized);
 };
 

@@ -11,17 +11,31 @@ const FollowCard = ({ location }) => {
   const [persons, setPersons] = useState([]);
   const { user } = useSelector((state) => state.authReducer.authData);
   const [showmore, setshowmore] = useState(false);
+  
+  const fetchPersons = async () => {
+    try {
+      const { data } = await getAllUser(user?._id);
+      setPersons(data);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+    }
+  };
+
   useEffect(() => {
-    const fetchPersons = async () => {
-      try {
-        const { data } = await getAllUser();
-        setPersons(data);
-      } catch (error) {
-        console.error("Error fetching users:", error);
+    if (user?._id) {
+      fetchPersons();
+    }
+  }, [location, user?._id]);
+
+  useEffect(() => {
+    const handleUserListRefresh = () => {
+      if (user?._id) {
+        fetchPersons();
       }
     };
-    fetchPersons();
-  }, [location]);
+    window.addEventListener('userListRefresh', handleUserListRefresh);
+    return () => window.removeEventListener('userListRefresh', handleUserListRefresh);
+  }, [user?._id]);
   const initialDisplayUsers = persons.slice(0, 4);
  const handleShowMoreClick = () => {
     if (!modalOpened) {

@@ -1,34 +1,54 @@
-const MessageModel = require("../models/messageModel.js");
-const ChatModel = require("../models/chatModel.js");
-const UserModel = require("../models/usermodel.js");
-const { createNotification } = require("./NotificationController.js");
+const { sendSuccess, sendError } = require('../utils/responseHandler');
+const { handleError } = require('../utils/errorHandler');
+const { HTTP_STATUS } = require('../utils/httpStatus');
+const { VALIDATION_MESSAGES } = require('../validation');
+const { DEFAULT_USER_DISPLAY_NAME } = require('../config/constants');
+const logger = require('../utils/logger');
+const { createNotification } = require('./NotificationController');
+const messageService = require('../services/messageService');
+const userService = require('../services/userService');
 
 const addMessage = async (req, res) => {
-  const { chatId, senderId, text } = req.body;
-  const message = new MessageModel({
-    chatId,
-    senderId,
-    text,
-  });
   try {
-    const result = await message.save();
+    const { chatId, senderId, text } = req.body;
+
+    if (!chatId) {
+      return sendError(res, HTTP_STATUS.BAD_REQUEST, VALIDATION_MESSAGES.required.chatId);
+    }
+
+    if (!senderId) {
+      return sendError(res, HTTP_STATUS.BAD_REQUEST, VALIDATION_MESSAGES.required.senderId);
+    }
+
+    if (!text || typeof text !== 'string' || text.trim().length === 0) {
+      return sendError(res, HTTP_STATUS.BAD_REQUEST, VALIDATION_MESSAGES.required.text);
+    }
+
+    const message = await messageService.createMessage({
+      chatId,
+      senderId,
+      text: text.trim(),
+    });
+
     try {
-      const chat = await ChatModel.findById(chatId);
+      const chat = await messageService.findChatById(chatId);
       if (chat?.members) {
-        const recipients = chat.members.filter((member) => member !== senderId);
+        const recipients = chat.members.filter((member) => member.toString() !== senderId.toString());
+
         let actorMeta;
         try {
-          const actor = await UserModel.findById(senderId).select('firstname lastname email profilePicture');
+          const actor = await userService.findUserById(senderId);
           if (actor) {
             actorMeta = {
-              id: actor.id.toString(),
-              name: [actor.firstname, actor.lastname].filter(Boolean).join(' ') || actor.email.split('@')[0],
+              id: actor._id.toString(),
+              name: [actor.firstName, actor.lastName].filter(Boolean).join(' ') || actor.email?.split('@')[0] || DEFAULT_USER_DISPLAY_NAME,
               avatar: actor.profilePicture || '',
             };
           }
         } catch {
           actorMeta = undefined;
         }
+
         await Promise.all(
           recipients.map((memberId) =>
             createNotification({
@@ -36,29 +56,37 @@ const addMessage = async (req, res) => {
               type: 'message',
               actorId: senderId,
               chatId,
-              messageId: result.id,
-              meta: { actor: actorMeta, preview: text?.slice(0, 140) || '' },
-            }),
-          ),
+              messageId: message._id,
+              meta: { actor: actorMeta, preview: text.trim().slice(0, 140) || '' },
+            })
+          )
         );
       }
     } catch (notificationError) {
-      console.error('Failed to create message notification', notificationError);
+      logger.error('Failed to create message notification', notificationError);
     }
-    res.status(200).json(result);
+
+    return sendSuccess(res, HTTP_STATUS.OK, message);
   } catch (error) {
-    res.status(500).json(error);
+    const { status, message } = handleError(error);
+    return sendError(res, status, message, error);
   }
 };
 
 const getMessages = async (req, res) => {
-  const { chatId } = req.params;
   try {
-    const result = await MessageModel.find({ chatId });
-    res.status(200).json(result);
+    const { chatId } = req.params;
 
+    if (!chatId) {
+      return sendError(res, HTTP_STATUS.BAD_REQUEST, VALIDATION_MESSAGES.required.chatId);
+    }
+
+    const messages = await messageService.findMessagesByChatId(chatId);
+
+    return sendSuccess(res, HTTP_STATUS.OK, messages);
   } catch (error) {
-    res.status(500).json(error);
+    const { status, message } = handleError(error);
+    return sendError(res, status, message, error);
   }
 };
 

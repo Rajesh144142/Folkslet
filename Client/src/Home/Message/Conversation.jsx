@@ -7,19 +7,43 @@ const Conversation = ({ data, currentUser, online }) => {
   const [userData, setUserData] = useState(null);
   const dispatch = useDispatch();
   useEffect(() => {
-    const userId = data?.members?.find((id) => id !== currentUser);
+    if (!data?.members || !currentUser) {
+      return;
+    }
+    
+    const otherMember = data.members.find((member) => {
+      const memberId = typeof member === 'object' ? member._id?.toString() || member.id?.toString() : member?.toString();
+      const currentUserId = currentUser?.toString();
+      return memberId && memberId !== currentUserId;
+    });
+    
+    if (!otherMember) {
+      return;
+    }
+    
+    const userId = typeof otherMember === 'object' ? otherMember._id || otherMember.id : otherMember;
+    
+    if (typeof otherMember === 'object' && otherMember.firstName) {
+      setUserData(otherMember);
+      dispatch({ type: SAVE_USER, data: otherMember });
+      return;
+    }
+    
     const getUserData = async () => {
       try {
-        const { data } = await getUser(userId);
-        setUserData(data);
-        dispatch({ type: SAVE_USER, data });
+        const response = await getUser(userId);
+        const userData = response?.data || response;
+        if (userData) {
+          setUserData(userData);
+          dispatch({ type: SAVE_USER, data: userData });
+        }
       } catch (error) {
-        console.error(error);
+        console.error('Error fetching user data:', error);
       }
     };
     getUserData();
   }, [currentUser, data, dispatch]);
-  const fullName = [userData?.firstname, userData?.lastname].filter(Boolean).join(" ");
+  const fullName = [userData?.firstName, userData?.lastName].filter(Boolean).join(" ") || userData?.email?.split('@')[0] || "Unknown user";
   return (
     <div className="flex items-center gap-4">
       <div className="relative flex-shrink-0">

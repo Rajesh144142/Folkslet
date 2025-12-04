@@ -8,8 +8,10 @@ const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 const hpp = require('hpp');
 const morgan = require('morgan');
+const logger = require('./utils/logger');
 const { connectDatabase } = require('./db');
 const { initSocket } = require('./socket');
+const globalAuthMiddleware = require('./middleware/globalAuthMiddleware');
 const AuthRouter = require('./route/authroute');
 const UserRouter = require('./route/userRoute');
 const PostRoute = require('./route/PostRoute');
@@ -19,7 +21,6 @@ const MessageRoute = require('./route/MessageRoute');
 const NotificationRoute = require('./route/NotificationRoute');
 const TrendRoute = require('./route/TrendRoute');
 const { scheduleDailyDigest } = require('./jobs/dailyDigest');
-const { scheduleTrendSeed } = require('./jobs/trendSeed');
 
 const app = express();
 const server = http.createServer(app);
@@ -49,25 +50,30 @@ app.use(express.urlencoded({ extended: true, limit: process.env.REQUEST_LIMIT ||
 app.use(hpp());
 app.use(compression());
 app.use(process.env.NODE_ENV === 'production' ? morgan('combined') : morgan('dev'));
-app.use('/post', PostRoute);
+
+const publicPath = path.join(__dirname, 'public');
+app.use('/images', express.static(path.join(publicPath, 'images'), {
+  maxAge: '1y',
+  etag: true,
+  lastModified: true,
+}));
+app.use(express.static(publicPath, {
+  maxAge: '1y',
+  etag: true,
+  lastModified: true,
+}));
+
 app.use('/auth', AuthRouter);
+
+app.use(globalAuthMiddleware);
+
+app.use('/post', PostRoute);
 app.use('/user', UserRouter);
 app.use('/upload', UploadRoute);
 app.use('/chat', ChatRoute);
 app.use('/message', MessageRoute);
 app.use('/notifications', NotificationRoute);
 app.use('/trends', TrendRoute);
-const publicPath = path.join(__dirname, 'public');
-app.use(express.static(publicPath, {
-  maxAge: '1y',
-  etag: true,
-  lastModified: true,
-}));
-app.use('/images', express.static(path.join(publicPath, 'images'), {
-  maxAge: '1y',
-  etag: true,
-  lastModified: true,
-}));
 app.use((req, res) => {
   res.status(404).json({ success: false, message: 'Not Found' });
 });
@@ -81,20 +87,22 @@ initSocket(server, corsOrigins);
 const start = async () => {
   await connectDatabase();
   scheduleDailyDigest();
-  scheduleTrendSeed();
   server.listen(port, () => {
-    console.info(`Server listening on port ${port}`);
+    logger.info(`Server listening on port ${port}`);
   });
 };
 start().catch((error) => {
-  console.error('Application startup failed', error);
+  logger.error('Application startup failed', error);
   process.exit(1);
 });
 process.on('unhandledRejection', (reason) => {
-  console.error('Unhandled Rejection', reason);
+  const error = reason instanceof Error 
+    ? reason 
+    : new Error(typeof reason === 'object' ? JSON.stringify(reason, null, 2) : String(reason));
+  logger.error('Unhandled Rejection', error);
   process.exit(1);
 });
 process.on('uncaughtException', (error) => {
-  console.error('Uncaught Exception', error);
+  logger.error('Uncaught Exception', error);
   process.exit(1);
 });

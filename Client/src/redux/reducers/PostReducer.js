@@ -9,6 +9,7 @@ import {
   POST_LIKES_UPDATED,
   POST_UPDATED,
   POST_DELETED,
+  POST_CREATED,
   POSTS_PAGE_REQUEST,
   POSTS_PAGE_SUCCESS,
   POSTS_PAGE_FAILURE,
@@ -120,6 +121,19 @@ const postReducer = (state = initialState, action) => {
           ? state.posts.filter((post) => post._id !== action.data.postId && post.id !== action.data.postId)
           : state.posts,
       };
+    case POST_CREATED: {
+      const posts = Array.isArray(state.posts) ? state.posts : [];
+      const isDuplicate = posts.some(
+        (post) => post._id === action.data._id || post.id === action.data._id,
+      );
+      if (isDuplicate) {
+        return state;
+      }
+      return {
+        ...state,
+        posts: [action.data, ...posts],
+      };
+    }
     default:
       return state;
   }

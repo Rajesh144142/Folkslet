@@ -41,7 +41,7 @@ const side = () => {
           </div>
           <div className="flex flex-col items-center mt-[3rem] gap-[10px]">
             <span className="font-bold text-2xl text-[var(--color-text-base)]">
-              {[user.firstname, user.lastname].filter(Boolean).join(' ') || user.email?.split('@')[0] || 'User'}
+              {[user.firstname || user.firstName, user.lastname || user.lastName].filter(Boolean).join(' ') || user.email?.split('@')[0] || 'User'}
             </span>
             <span className="text-center text-[var(--color-text-muted)]">
               {user.about ? user.about : " Write About YourSelf"}

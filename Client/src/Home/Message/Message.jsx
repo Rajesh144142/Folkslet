@@ -65,17 +65,33 @@ const Message = () => {
       socketInstance.disconnect();
     };
   }, [user]);
+  const fetchChats = useCallback(async () => {
+    try {
+      const response = await userChats(user._id);
+      const chatsData = Array.isArray(response?.data) ? response.data : [];
+      setChats(chatsData);
+    } catch (error) {
+      console.error('Error fetching chats:', error);
+      setChats([]);
+    }
+  }, [user?._id]);
+
   useEffect(() => {
-    const getChats = async () => {
-      try {
-        const { data } = await userChats(user._id);
-        setChats(data);
-      } catch (error) {
-        console.log(error);
+    if (user?._id) {
+      fetchChats();
+    }
+  }, [user?._id, fetchChats]);
+
+  useEffect(() => {
+    const handleChatCreated = () => {
+      if (user?._id) {
+        fetchChats();
       }
     };
-    getChats();
-  }, [user]);
+    window.addEventListener('chatCreated', handleChatCreated);
+    return () => window.removeEventListener('chatCreated', handleChatCreated);
+  }, [user?._id, fetchChats]);
+
   useEffect(() => {
     if (sendMessage !== null) {
       socket.current.emit("send-message", sendMessage);
@@ -88,9 +104,20 @@ const Message = () => {
     });
   }, []);
   const checkOnlineStatus = (chat) => {
-    const chatMember = chat.members.find((member) => member !== user._id);
-    const online = onlineUsers.find((user) => user.userId === chatMember);
-    return online ? true : false;
+    if (!chat?.members || !user?._id) {
+      return false;
+    }
+    const chatMember = chat.members.find((member) => {
+      const memberId = typeof member === 'object' ? member._id?.toString() || member.id?.toString() : member?.toString();
+      const currentUserId = user._id?.toString();
+      return memberId && memberId !== currentUserId;
+    });
+    if (!chatMember) {
+      return false;
+    }
+    const memberId = typeof chatMember === 'object' ? chatMember._id?.toString() || chatMember.id?.toString() : chatMember?.toString();
+    const online = onlineUsers.find((onlineUser) => onlineUser.userId === memberId);
+    return !!online;
   };
 
   useEffect(() => {

@@ -1,9 +1,9 @@
 const express = require('express');
-const router = express.Router();
-const AuthController = require('../controller/authController'); // Check the file path and extension
+const { signup, signin } = require('../controller/authController');
 
-// Define the routes
-router.post('/signup', AuthController.signup);
-router.post('/login', AuthController.signin); // Rename the signin controller function
+const router = express.Router();
+
+router.post('/signup', signup);
+router.post('/login', signin);
 
 module.exports = router;

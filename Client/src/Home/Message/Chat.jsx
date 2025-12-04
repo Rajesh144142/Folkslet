@@ -25,8 +25,19 @@ const Chat = ({ chat, currentUser, setsendMessage, recieveMessage, setsendTyping
     if (!socket || !chat) return;
 
     const handleIncomingCall = (data) => {
-      const receiverId = chat?.members?.find((id) => id !== currentUser);
-      if (data && receiverId === data.senderId) {
+      if (!chat?.members || !currentUser || !data) {
+        return;
+      }
+      const otherMember = chat.members.find((member) => {
+        const memberId = typeof member === 'object' ? member._id?.toString() || member.id?.toString() : member?.toString();
+        const currentUserId = currentUser?.toString();
+        return memberId && memberId !== currentUserId;
+      });
+      if (!otherMember) {
+        return;
+      }
+      const receiverId = typeof otherMember === 'object' ? otherMember._id?.toString() || otherMember.id?.toString() : otherMember?.toString();
+      if (receiverId === data.senderId) {
         setLocalIncomingCall(data);
         if (onIncomingCall) {
           onIncomingCall(data);
@@ -42,15 +53,20 @@ const Chat = ({ chat, currentUser, setsendMessage, recieveMessage, setsendTyping
 
   const emitTyping = useCallback(
     (isTyping) => {
-      if (!chat) {
+      if (!chat?.members || !currentUser) {
         return;
       }
-      const receiverId = chat.members.find((id) => id !== currentUser);
-      if (!receiverId) {
+      const otherMember = chat.members.find((member) => {
+        const memberId = typeof member === 'object' ? member._id?.toString() || member.id?.toString() : member?.toString();
+        const currentUserId = currentUser?.toString();
+        return memberId && memberId !== currentUserId;
+      });
+      if (!otherMember) {
         return;
       }
+      const receiverId = typeof otherMember === 'object' ? otherMember._id?.toString() || otherMember.id?.toString() : otherMember?.toString();
       setsendTyping({
-        chatId: chat._id,
+        chatId: chat._id || chat.id,
         receiverId,
         senderId: currentUser,
         isTyping,
@@ -67,18 +83,38 @@ const Chat = ({ chat, currentUser, setsendMessage, recieveMessage, setsendTyping
   }, [recieveMessage, chat]);
 
   useEffect(() => {
-    const userId = chat?.members?.find((id) => id !== currentUser);
+    if (!chat?.members || !currentUser) {
+      return;
+    }
+    
+    const otherMember = chat.members.find((member) => {
+      const memberId = typeof member === 'object' ? member._id?.toString() || member.id?.toString() : member?.toString();
+      const currentUserId = currentUser?.toString();
+      return memberId && memberId !== currentUserId;
+    });
+    
+    if (!otherMember) {
+      return;
+    }
+    
+    if (typeof otherMember === 'object' && otherMember.firstName) {
+      setUserData(otherMember);
+      return;
+    }
+    
+    const userId = typeof otherMember === 'object' ? otherMember._id || otherMember.id : otherMember;
     const getUserData = async () => {
       try {
-        const { data } = await getUser(userId);
-        setUserData(data);
+        const response = await getUser(userId);
+        const userData = response?.data || response;
+        if (userData) {
+          setUserData(userData);
+        }
       } catch (error) {
-        console.error(error);
+        console.error('Error fetching user data:', error);
       }
     };
-    if (chat) {
-      getUserData();
-    }
+    getUserData();
   }, [chat, currentUser]);
 
   useEffect(() => {
@@ -168,7 +204,7 @@ const Chat = ({ chat, currentUser, setsendMessage, recieveMessage, setsendTyping
     );
   }
 
-  const fullName = [userData?.firstname, userData?.lastname].filter(Boolean).join(" ");
+  const fullName = [userData?.firstName, userData?.lastName].filter(Boolean).join(" ") || userData?.email?.split('@')[0] || "Unknown user";
 
   return (
     <div className="flex h-full flex-1 flex-col bg-[var(--color-surface)] rounded-3xl">
@@ -222,7 +258,7 @@ const Chat = ({ chat, currentUser, setsendMessage, recieveMessage, setsendTyping
                 ref={index === messages.length - 1 ? scroll : null}
               >
                 <span className="mb-1 text-xs font-medium text-[var(--color-text-muted)]">
-                  {isOwn ? ([user.firstname, user.lastname].filter(Boolean).join(' ') || user.email?.split('@')[0] || 'You') : fullName || "Unknown user"}
+                  {isOwn ? ([user.firstName, user.lastName].filter(Boolean).join(' ') || user.email?.split('@')[0] || 'You') : fullName || "Unknown user"}
                 </span>
                 {message?.text && (
                   <span
@@ -278,7 +314,7 @@ const Chat = ({ chat, currentUser, setsendMessage, recieveMessage, setsendTyping
       {localIncomingCall && (
         <VideoCall
           callType={localIncomingCall.callType}
-          remoteUser={localIncomingCall.sender || { _id: localIncomingCall.senderId, firstname: localIncomingCall.senderName }}
+          remoteUser={localIncomingCall.sender || { _id: localIncomingCall.senderId, firstName: localIncomingCall.senderName }}
           onEndCall={() => {
             setLocalIncomingCall(null);
             if (onIncomingCall) {
@@ -289,7 +325,7 @@ const Chat = ({ chat, currentUser, setsendMessage, recieveMessage, setsendTyping
           isIncoming={true}
           offer={localIncomingCall.offer}
           onCallAccepted={() => {
-            const senderUser = localIncomingCall.sender || { _id: localIncomingCall.senderId, firstname: localIncomingCall.senderName };
+            const senderUser = localIncomingCall.sender || { _id: localIncomingCall.senderId, firstName: localIncomingCall.senderName };
             setActiveCall({ type: localIncomingCall.callType, user: senderUser });
             setLocalIncomingCall(null);
             if (onIncomingCall) {

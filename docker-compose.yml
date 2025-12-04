@@ -1,0 +1,102 @@
+
+services:
+  mongodb:
+    image: mongo:7
+    container_name: folkslet-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: folkslet
+    networks:
+      - folkslet-network
+
+  server:
+    build:
+      context: ./Server
+      dockerfile: Dockerfile
+    container_name: folkslet-server
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      MONGO_URI: mongodb://mongodb:27017/folkslet
+      JWTKEY: ${JWTKEY:-change-this-secret-key}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-1h}
+      CLIENT_ORIGINS: http://localhost:5173,http://localhost:80
+      REQUEST_LIMIT: ${REQUEST_LIMIT:-30mb}
+      RATE_LIMIT_WINDOW_MS: ${RATE_LIMIT_WINDOW_MS:-900000}
+      RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-1000}
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET}
+      CLOUDINARY_UPLOAD_FOLDER: ${CLOUDINARY_UPLOAD_FOLDER:-folkslet}
+      UPLOAD_MAX_FILE_SIZE: ${UPLOAD_MAX_FILE_SIZE:-10485760}
+      SOCKET_MAX_PAYLOAD: ${SOCKET_MAX_PAYLOAD:-1048576}
+      DISABLE_DIGEST_JOB: ${DISABLE_DIGEST_JOB:-false}
+      DIGEST_CRON: ${DIGEST_CRON:-30 5 * * *}
+      DISABLE_TREND_JOB: ${DISABLE_TREND_JOB:-false}
+      TREND_CRON: ${TREND_CRON:-*/45 * * * * *}
+      TREND_LOOKBACK_HOURS: ${TREND_LOOKBACK_HOURS:-24}
+      TREND_SAMPLE_LIMIT: ${TREND_SAMPLE_LIMIT:-200}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      TZ: ${TZ:-UTC}
+    depends_on:
+      - mongodb
+    volumes:
+      - ./Server/public:/app/public
+    networks:
+      - folkslet-network
+
+  socket:
+    build:
+      context: .
+      dockerfile: Socket/Dockerfile
+    container_name: folkslet-socket
+    restart: unless-stopped
+    ports:
+      - "8800:8800"
+    env_file:
+      - .env
+    environment:
+      SOCKET_PORT: 8800
+      SOCKET_ALLOWED_ORIGINS: http://localhost:5173,http://localhost:80
+      SOCKET_PING_TIMEOUT: ${SOCKET_PING_TIMEOUT:-25000}
+      SOCKET_PING_INTERVAL: ${SOCKET_PING_INTERVAL:-20000}
+    depends_on:
+      - server
+    networks:
+      - folkslet-network
+
+  client:
+    build:
+      context: ./Client
+      dockerfile: Dockerfile
+    container_name: folkslet-client
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    environment:
+      VITE_API_BASE_URL: http://localhost:5000
+      VITE_SOCKET_URL: http://localhost:8800
+      VITE_WS_BASE_URL: ws://localhost:5000
+      VITE_PUBLIC_FOLDER: http://localhost:5000/images/
+    depends_on:
+      - server
+      - socket
+    networks:
+      - folkslet-network
+
+volumes:
+  mongodb_data:
+
+networks:
+  folkslet-network:
+    driver: bridge
+

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { Link } from 'react-router-dom';
 
@@ -10,9 +10,12 @@ import { assetUrl } from '../../../../utils/assets';
 const UserSuggestion = ({ person }) => {
   const { user } = useSelector((state) => state.authReducer.authData);
   const dispatch = useDispatch();
-  const followerIds = Array.isArray(person.followers) ? person.followers : [];
   const userId = user?._id;
-  const [isFollowing, setIsFollowing] = useState(() => (userId ? followerIds.includes(userId) : false));
+  const [isFollowing, setIsFollowing] = useState(() => person.isFollowing || false);
+  
+  useEffect(() => {
+    setIsFollowing(person.isFollowing || false);
+  }, [person.isFollowing]);
 
   if (!userId) {
     return null;
@@ -41,12 +44,12 @@ const UserSuggestion = ({ person }) => {
       >
         <img
           src={assetUrl(person.profilePicture, 'defaultProfile.png')}
-          alt={[person.firstname, person.lastname].filter(Boolean).join(' ') || person.email?.split('@')[0] || 'User'}
+          alt={[person.firstName || person.firstname, person.lastName || person.lastname].filter(Boolean).join(' ') || person.email?.split('@')[0] || 'User'}
           className="h-12 w-12 rounded-full object-cover ring-2 ring-[var(--color-border)]"
         />
         <div className="flex flex-col">
           <span className="text-sm font-semibold text-[var(--color-text-base)]">
-            {[person.firstname, person.lastname].filter(Boolean).join(' ') || person.email?.split('@')[0] || 'User'}
+            {[person.firstName || person.firstname, person.lastName || person.lastname].filter(Boolean).join(' ') || person.email?.split('@')[0] || 'User'}
           </span>
           <span className="text-xs text-[var(--color-text-muted)]">@{person.email?.split('@')[0] || 'user'}</span>
         </div>
